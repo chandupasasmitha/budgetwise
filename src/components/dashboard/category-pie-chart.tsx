@@ -1,40 +1,69 @@
-'use client';
+"use client";
 
-import { Pie, PieChart, ResponsiveContainer, Tooltip, Cell, Legend } from 'recharts';
-import type { ChartConfig } from '@/components/ui/chart';
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
-import { mockExpenses } from '@/lib/mock-data';
-import { EXPENSE_CATEGORIES } from '@/lib/constants';
+import {
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  Cell,
+  Legend,
+} from "recharts";
+import type { ChartConfig } from "@/components/ui/chart";
+import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import { useDashboardData } from "./dashboard-data-provider";
+import { EXPENSE_CATEGORIES } from "@/lib/constants";
 
-const categoryData = EXPENSE_CATEGORIES.map(category => {
-    const total = mockExpenses
-        .filter(exp => exp.category === category)
-        .reduce((sum, exp) => sum + exp.amount, 0);
+function getCategoryData(expenses: any[]) {
+  return EXPENSE_CATEGORIES.map((category) => {
+    const total = expenses
+      .filter((exp) => exp.category === category)
+      .reduce((sum, exp) => sum + exp.amount, 0);
     return { name: category, value: total };
-}).filter(item => item.value > 0);
-
-const chartConfig = {
-    value: {
-        label: "Amount",
-    },
-    ...Object.fromEntries(categoryData.map((item, index) => [item.name, { label: item.name, color: `hsl(var(--chart-${(index % 5) + 1}))` }]))
-} satisfies ChartConfig;
-
+  }).filter((item) => item.value > 0);
+}
 
 export default function CategoryPieChart() {
-    return (
-        <ChartContainer config={chartConfig} className="min-h-[200px] w-full aspect-square">
-            <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                    <Tooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                    <Pie data={categoryData} dataKey="value" nameKey="name" innerRadius={50} strokeWidth={5}>
-                         {categoryData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={chartConfig[entry.name]?.color} />
-                        ))}
-                    </Pie>
-                    <Legend />
-                </PieChart>
-            </ResponsiveContainer>
-        </ChartContainer>
-    );
+  const { expenses } = useDashboardData();
+  const categoryData = getCategoryData(expenses);
+  const chartConfig: ChartConfig &
+    Record<string, { label: string; color: string }> = {
+    value: {
+      label: "Amount",
+      color: "#8884d8",
+    },
+    ...Object.fromEntries(
+      categoryData.map((item: { name: string }, index: number) => [
+        item.name,
+        { label: item.name, color: `hsl(var(--chart-${(index % 5) + 1}))` },
+      ])
+    ),
+  };
+
+  return (
+    <ChartContainer
+      config={chartConfig}
+      className="min-h-[200px] w-full aspect-square"
+    >
+      <ResponsiveContainer width="100%" height={250}>
+        <PieChart>
+          <Tooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+          <Pie
+            data={categoryData}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={50}
+            strokeWidth={5}
+          >
+            {categoryData.map((entry: { name: string }, index: number) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={chartConfig[entry.name]?.color ?? "#8884d8"}
+              />
+            ))}
+          </Pie>
+          <Legend />
+        </PieChart>
+      </ResponsiveContainer>
+    </ChartContainer>
+  );
 }
