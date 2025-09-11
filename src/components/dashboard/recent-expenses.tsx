@@ -9,18 +9,34 @@ import {
 import { useEffect, useState } from "react";
 import type { Expense } from "@/lib/types";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
-import { AddExpenseSheet } from "./add-expense-sheet";
+import {
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  limit,
+  where,
+} from "firebase/firestore";
+import { useAuth } from "@/hooks/use-auth";
+import AddExpenseSheet from "./add-expense-sheet";
 import ExpensesTable from "./expenses-table";
+
 export default function RecentExpenses() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     async function fetchExpenses() {
+      if (!user) {
+        setExpenses([]);
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       const q = query(
         collection(db, "expenses"),
+        where("userId", "==", user.uid),
         orderBy("date", "desc"),
         limit(10)
       );
@@ -39,7 +55,7 @@ export default function RecentExpenses() {
       setLoading(false);
     }
     fetchExpenses();
-  }, []);
+  }, [user]);
 
   return (
     <Card>

@@ -48,12 +48,14 @@ import { expenseSchema, type ExpenseFormData } from "@/lib/schemas";
 import { suggestCategoriesAction } from "@/app/actions";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
+import { useAuth } from "@/hooks/use-auth";
 
-export function AddExpenseSheet() {
+function AddExpenseSheet() {
   const [isOpen, setIsOpen] = useState(false);
   const [suggestedCategories, setSuggestedCategories] = useState<string[]>([]);
   const [isSuggesting, startSuggestionTransition] = useTransition();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const form = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
@@ -67,13 +69,15 @@ export function AddExpenseSheet() {
 
   const onSubmit = async (data: ExpenseFormData) => {
     try {
-      // Save expense to Firestore
+      if (!user) throw new Error("User not logged in");
+      // Save expense to Firestore with userId
       await addDoc(collection(db, "expenses"), {
         description: data.description,
         amount: data.amount,
         category: data.category,
         date: Timestamp.fromDate(new Date(data.date)),
         createdAt: Timestamp.now(),
+        userId: user.uid,
       });
       toast({
         title: "Expense Added",
@@ -281,3 +285,5 @@ export function AddExpenseSheet() {
     </Sheet>
   );
 }
+
+export default AddExpenseSheet;

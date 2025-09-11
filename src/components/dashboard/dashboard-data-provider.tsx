@@ -2,7 +2,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { Expense } from "@/lib/types";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
+import { useAuth } from "@/hooks/use-auth";
 
 // Context type
 interface DashboardDataContextType {
@@ -13,19 +14,28 @@ interface DashboardDataContextType {
 const DashboardDataContext = createContext<
   DashboardDataContextType | undefined
 >(undefined);
-
 export function DashboardDataProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { user } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchExpenses() {
+      if (!user) {
+        setExpenses([]);
+        setLoading(false);
+        return;
+      }
       setLoading(true);
-      const q = query(collection(db, "expenses"), orderBy("date", "desc"));
+      const q = query(
+        collection(db, "expenses"),
+        where("userId", "==", user.uid),
+        orderBy("date", "desc")
+      );
       const querySnapshot = await getDocs(q);
       const expensesData = querySnapshot.docs.map((doc) => {
         const data = doc.data();
@@ -41,7 +51,7 @@ export function DashboardDataProvider({
       setLoading(false);
     }
     fetchExpenses();
-  }, []);
+  }, [user]);
 
   return (
     <DashboardDataContext.Provider value={{ expenses, loading }}>
