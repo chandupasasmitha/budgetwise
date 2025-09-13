@@ -186,7 +186,7 @@ function AddTransactionSheet({ bookId }: AddTransactionSheetProps) {
             </span>
           </Button>
         </SheetTrigger>
-        <SheetContent className="flex flex-col">
+        <SheetContent className="flex flex-col gap-0">
           <SheetHeader>
             <SheetTitle>Add a new transaction</SheetTitle>
             <SheetDescription>
@@ -197,9 +197,9 @@ function AddTransactionSheet({ bookId }: AddTransactionSheetProps) {
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
-              className="flex flex-col h-full"
+              className="flex flex-col flex-1 overflow-hidden"
             >
-              <ScrollArea className="flex-1 pr-6">
+              <ScrollArea className="flex-1 pr-6 -mr-6">
                 <div className="space-y-4 py-4">
                   <FormField
                     control={form.control}
@@ -418,7 +418,7 @@ function AddTransactionSheet({ bookId }: AddTransactionSheetProps) {
                   />
                 </div>
               </ScrollArea>
-              <SheetFooter className="mt-auto pt-4">
+              <SheetFooter className="pt-4 border-t">
                 <SheetClose asChild>
                   <Button type="button" variant="outline">
                     Cancel
