@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import OverviewCards from "@/components/dashboard/overview-cards";
 import CategoryPieChart from "@/components/dashboard/category-pie-chart";
 import SpendingTrendChart from "@/components/dashboard/spending-trend-chart";
-import RecentTransactions from "@/components/dashboard/recent-expenses";
+import RecentTransactions from "@/components/dashboard/recent-transactions";
 import {
   createBook,
   getBooks,
