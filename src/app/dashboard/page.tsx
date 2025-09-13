@@ -8,10 +8,10 @@ import RecentExpenses from "@/components/dashboard/recent-expenses";
 import {
   createBook,
   getBooks,
-  addTransaction,
-  getTransactions,
+  getTransactionsForBook,
 } from "@/lib/db-books";
 import { useAuth } from "@/hooks/use-auth";
+import type { Expense } from "@/lib/types";
 
 interface Book {
   id: string;
@@ -20,8 +20,6 @@ interface Book {
   expenses?: number;
   income?: number;
 }
-
-// Removed Transaction interface
 
 // Modal component for creating a new book
 interface NewBookModalProps {
@@ -73,12 +71,13 @@ const NewBookModal = ({ isOpen, onClose, onSave }: NewBookModalProps) => {
 interface DashboardProps {
   onSelectBook: (book: Book) => void;
   onOpenModal: () => void;
+  books: Book[];
 }
 const Dashboard = ({
   onSelectBook,
   onOpenModal,
   books,
-}: DashboardProps & { books: Book[] }) => {
+}: DashboardProps) => {
   return (
     <div className="flex-1 p-6 space-y-8 overflow-y-auto">
       <div className="flex items-center justify-between">
@@ -137,10 +136,22 @@ interface CashBookProps {
   onBack: () => void;
 }
 const CashBook = ({ book, onBack }: CashBookProps) => {
-  // Removed transaction state and fetching logic
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Remove the duplicate transaction handler
-  // Removed TransactionRow component
+  useEffect(() => {
+    async function fetchExpenses() {
+      if (!book) return;
+      setLoading(true);
+      const expensesData = await getTransactionsForBook(book.id);
+      setExpenses(expensesData);
+      setLoading(false);
+    }
+    fetchExpenses();
+  }, [book]);
+
+  const recentExpenses = expenses.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 10);
+
   return (
     <div className="flex-1 p-6 space-y-8 overflow-y-auto">
       <button
@@ -177,34 +188,28 @@ const CashBook = ({ book, onBack }: CashBookProps) => {
               ${(book.balance ?? 0).toLocaleString()}
             </span>
           </p>
-          {/* Add Transaction button and modal removed, use original dashboard widgets and charts */}
         </div>
       </div>
 
-      {/* Dashboard widgets for this book (charts, etc.) */}
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-        <OverviewCards />
+        <OverviewCards expenses={expenses} />
       </div>
       <div className="mt-4 grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
         <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
             <div className="sm:col-span-2 bg-white rounded-xl shadow-md p-4">
               <h3 className="mb-2 text-lg font-semibold">Spending Trend</h3>
-              <SpendingTrendChart />
+              <SpendingTrendChart expenses={expenses} />
             </div>
             <div className="sm:col-span-2 bg-white rounded-xl shadow-md p-4">
               <h3 className="mb-2 text-lg font-semibold">Category Breakdown</h3>
-              <CategoryPieChart />
+              <CategoryPieChart expenses={expenses} />
             </div>
           </div>
-          <RecentExpenses />
+          <RecentExpenses expenses={recentExpenses} bookId={book.id} isLoading={loading} />
         </div>
         <div className="hidden xl:block"></div>
       </div>
-
-      {/* Removed transactions table */}
-
-      {/* Removed duplicate transaction modal and logic */}
     </div>
   );
 };

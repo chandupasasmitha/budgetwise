@@ -14,12 +14,14 @@ import {
   ChartContainer,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { useDashboardData } from "./dashboard-data-provider";
 import { format, subDays, eachDayOfInterval } from "date-fns";
+import type { Expense } from "@/lib/types";
 
-export default function SpendingTrendChart() {
-  const { expenses } = useDashboardData();
-  // Aggregate data by day for the last 30 days
+interface SpendingTrendChartProps {
+  expenses: Expense[];
+}
+
+export default function SpendingTrendChart({ expenses }: SpendingTrendChartProps) {
   const endDate = new Date();
   const startDate = subDays(endDate, 29);
   const dateRange = eachDayOfInterval({ start: startDate, end: endDate });

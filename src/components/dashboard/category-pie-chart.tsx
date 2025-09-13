@@ -10,8 +10,12 @@ import {
 } from "recharts";
 import type { ChartConfig } from "@/components/ui/chart";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import { useDashboardData } from "./dashboard-data-provider";
 import { EXPENSE_CATEGORIES } from "@/lib/constants";
+import type { Expense } from "@/lib/types";
+
+interface CategoryPieChartProps {
+  expenses: Expense[];
+}
 
 function getCategoryData(expenses: any[]) {
   return EXPENSE_CATEGORIES.map((category) => {
@@ -22,8 +26,7 @@ function getCategoryData(expenses: any[]) {
   }).filter((item) => item.value > 0);
 }
 
-export default function CategoryPieChart() {
-  const { expenses } = useDashboardData();
+export default function CategoryPieChart({ expenses }: CategoryPieChartProps) {
   const categoryData = getCategoryData(expenses);
   const chartConfig: ChartConfig &
     Record<string, { label: string; color: string }> = {

@@ -50,7 +50,11 @@ import { db } from "@/lib/firebase";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
 
-function AddExpenseSheet() {
+interface AddExpenseSheetProps {
+  bookId: string;
+}
+
+function AddExpenseSheet({ bookId }: AddExpenseSheetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [suggestedCategories, setSuggestedCategories] = useState<string[]>([]);
   const [isSuggesting, startSuggestionTransition] = useTransition();
@@ -70,7 +74,8 @@ function AddExpenseSheet() {
   const onSubmit = async (data: ExpenseFormData) => {
     try {
       if (!user) throw new Error("User not logged in");
-      // Save expense to Firestore with userId
+      if (!bookId) throw new Error("No cash book selected");
+
       await addDoc(collection(db, "expenses"), {
         description: data.description,
         amount: data.amount,
@@ -78,14 +83,19 @@ function AddExpenseSheet() {
         date: Timestamp.fromDate(new Date(data.date)),
         createdAt: Timestamp.now(),
         userId: user.uid,
+        bookId: bookId,
       });
+
       toast({
         title: "Expense Added",
         description: "Your expense has been successfully added and saved.",
       });
+
       form.reset();
       setSuggestedCategories([]);
       setIsOpen(false);
+      // NOTE: Consider a better way to refresh data than a full reload
+      window.location.reload(); 
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -171,7 +181,6 @@ function AddExpenseSheet() {
                     variant="secondary"
                     className="cursor-pointer"
                     onClick={() => {
-                      // Check if it's a valid category before setting
                       if (EXPENSE_CATEGORIES.includes(cat)) {
                         form.setValue("category", cat);
                       } else {

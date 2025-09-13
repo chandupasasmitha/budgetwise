@@ -1,14 +1,17 @@
 "use client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, Wallet, PiggyBank, CreditCard } from "lucide-react";
-import { useDashboardData } from "./dashboard-data-provider";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
+import type { Expense } from "@/lib/types";
 
-export default function OverviewCards() {
-  const { expenses } = useDashboardData();
+interface OverviewCardsProps {
+  expenses: Expense[];
+}
+
+export default function OverviewCards({ expenses }: OverviewCardsProps) {
   const { user } = useAuth();
   const [monthlyBudget, setMonthlyBudget] = useState<number>(2000);
   const [loadingBudget, setLoadingBudget] = useState(true);
@@ -34,7 +37,6 @@ export default function OverviewCards() {
     await setDoc(budgetRef, { monthlyBudget });
   };
 
-  // Calculate total spent for current month
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
