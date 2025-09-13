@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Home,
-  BarChart3,
   Settings,
 } from 'lucide-react';
 import { Logo } from '@/components/icons/logo';
@@ -12,7 +11,6 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', icon: Home, label: 'Dashboard' },
-  { href: '/dashboard/reports', icon: BarChart3, label: 'Reports' },
   { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
 
