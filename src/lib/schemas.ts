@@ -8,6 +8,7 @@ export const transactionSchema = z.object({
   description: z.string().min(3, { message: "Description must be at least 3 characters." }).max(100, { message: "Description must be less than 100 characters." }),
   amount: z.coerce.number().positive({ message: "Amount must be a positive number." }),
   category: z.string().optional(),
+  paymentMethod: z.string().min(1, { message: "Please select a payment method." }),
   date: z.date({
     required_error: "A date is required.",
   }),

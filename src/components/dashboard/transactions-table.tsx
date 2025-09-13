@@ -34,6 +34,7 @@ function TransactionsTable({ transactions }: TransactionsTableProps) {
     description: "",
     amount: 0,
     category: "",
+    paymentMethod: "",
   });
 
   const handleDelete = async (id: string) => {
@@ -47,6 +48,7 @@ function TransactionsTable({ transactions }: TransactionsTableProps) {
       description: transaction.description,
       amount: transaction.amount,
       category: transaction.category,
+      paymentMethod: transaction.paymentMethod,
     });
   };
 
@@ -57,6 +59,7 @@ function TransactionsTable({ transactions }: TransactionsTableProps) {
       description: editForm.description,
       amount: editForm.amount,
       category: editingTransaction.type === 'expense' ? editForm.category : null,
+      paymentMethod: editForm.paymentMethod,
     });
     setEditingTransaction(null);
     window.location.reload();
@@ -69,6 +72,7 @@ function TransactionsTable({ transactions }: TransactionsTableProps) {
           <TableRow>
             <TableHead>Description</TableHead>
             <TableHead>Category</TableHead>
+            <TableHead className="hidden md:table-cell">Payment Method</TableHead>
             <TableHead className="hidden md:table-cell">Date</TableHead>
             <TableHead className="text-right">Amount</TableHead>
             <TableHead>
@@ -89,6 +93,7 @@ function TransactionsTable({ transactions }: TransactionsTableProps) {
                   <Badge variant="secondary">Income</Badge>
                 )}
               </TableCell>
+              <TableCell className="hidden md:table-cell">{transaction.paymentMethod}</TableCell>
               <TableCell className="hidden md:table-cell">
                 {format(transaction.date, "PPP")}
               </TableCell>
@@ -152,7 +157,7 @@ function TransactionsTable({ transactions }: TransactionsTableProps) {
               />
             </div>
             {editingTransaction.type === 'expense' && (
-                 <div className="mb-4">
+                 <div className="mb-2">
                  <label className="block mb-1">Category</label>
                  <input
                    className="w-full border px-2 py-1 rounded"
@@ -164,6 +169,17 @@ function TransactionsTable({ transactions }: TransactionsTableProps) {
                  />
                </div>
             )}
+             <div className="mb-4">
+              <label className="block mb-1">Payment Method</label>
+              <input
+                className="w-full border px-2 py-1 rounded"
+                value={editForm.paymentMethod}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, paymentMethod: e.target.value }))
+                }
+                required
+              />
+            </div>
             <div className="flex gap-2">
               <Button type="submit">Save</Button>
               <Button

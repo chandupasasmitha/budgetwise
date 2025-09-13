@@ -1,4 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import PaymentMethods from "@/components/dashboard/settings/payment-methods";
 
 export default function SettingsPage() {
     return (
@@ -10,7 +11,16 @@ export default function SettingsPage() {
                     <CardDescription>Manage your account settings.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                   <p>Settings page is under construction.</p>
+                   <p>Profile settings are under construction.</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Payment Methods</CardTitle>
+                    <CardDescription>Manage your payment methods. These will be available when adding a transaction.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                   <PaymentMethods />
                 </CardContent>
             </Card>
         </div>

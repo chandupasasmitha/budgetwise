@@ -65,7 +65,23 @@ export async function getTransactionsForBook(bookId: string): Promise<Transactio
       category: data.category,
       date: data.date.toDate(),
       type: data.type,
+      paymentMethod: data.paymentMethod,
     };
   });
   return transactions;
+}
+
+export async function getPaymentMethods(userId: string) {
+    const q = query(collection(db, "paymentMethods"), where("userId", "==", userId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as {id: string, name: string}[];
+}
+
+export async function addPaymentMethod({ name, userId }: { name: string; userId: string }) {
+    const docRef = await addDoc(collection(db, "paymentMethods"), {
+        name,
+        userId,
+        createdAt: Timestamp.now(),
+    });
+    return docRef.id;
 }
