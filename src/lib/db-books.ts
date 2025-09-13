@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase";
-import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, orderBy } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc } from "firebase/firestore";
 import type { Transaction } from "./types";
 
 export async function createBook({ name, userId }: { name: string; userId: string }) {
@@ -7,17 +7,47 @@ export async function createBook({ name, userId }: { name: string; userId: strin
     name,
     userId,
     createdAt: Timestamp.now(),
-    balance: 0,
-    income: 0,
-    expenses: 0,
   });
   return docRef.id;
 }
 
 export async function getBooks(userId: string) {
-  const q = query(collection(db, "books"), where("userId", "==", userId));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const booksQuery = query(collection(db, "books"), where("userId", "==", userId));
+  const transactionsQuery = query(collection(db, "transactions"), where("userId", "==", userId));
+  
+  const [booksSnapshot, transactionsSnapshot] = await Promise.all([
+    getDocs(booksQuery),
+    getDocs(transactionsQuery),
+  ]);
+
+  const books = booksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const transactions = transactionsSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        bookId: data.bookId,
+        type: data.type,
+        amount: data.amount,
+      }
+  });
+
+  return books.map(book => {
+    const bookTransactions = transactions.filter(t => t.bookId === book.id);
+    const income = bookTransactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+    const expenses = bookTransactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+    const balance = income - expenses;
+
+    return {
+      ...book,
+      income,
+      expenses,
+      balance,
+    };
+  });
 }
 
 export async function getTransactionsForBook(bookId: string): Promise<Transaction[]> {
@@ -38,25 +68,4 @@ export async function getTransactionsForBook(bookId: string): Promise<Transactio
     };
   });
   return transactions;
-}
-
-export async function addTransaction({ bookId, type, amount, description, date, category }: { bookId: string; type: "income" | "expense"; amount: number; description: string; date: Date, category?: string }) {
-  await addDoc(collection(db, "transactions"), {
-    bookId,
-    type,
-    amount,
-    description,
-    date: Timestamp.fromDate(date),
-    category: category || null,
-  });
-}
-
-export async function getTransactions(bookId: string) {
-  const q = query(collection(db, "transactions"), where("bookId", "==", bookId));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-}
-
-export async function updateBookBalance(bookId: string, newBalance: number) {
-  await updateDoc(doc(db, "books", bookId), { balance: newBalance });
 }
