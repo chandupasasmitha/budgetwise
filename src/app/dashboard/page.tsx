@@ -138,7 +138,8 @@ const CashBook = ({ book, onBack }: CashBookProps) => {
       if (!book) return;
       setLoading(true);
       const transactionsData = await getTransactionsForBook(book.id);
-      setTransactions(transactionsData);
+      const sortedTransactions = transactionsData.sort((a, b) => b.date.getTime() - a.date.getTime());
+      setTransactions(sortedTransactions);
       setLoading(false);
     }
     fetchTransactions();
