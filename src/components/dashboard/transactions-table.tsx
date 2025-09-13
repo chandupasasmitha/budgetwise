@@ -92,7 +92,9 @@ function TransactionsTable({ transactions }: TransactionsTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Description</TableHead>
-              <TableHead className="hidden sm:table-cell">Category</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Payment Method</TableHead>
+              <TableHead>Date</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead>
                 <span className="sr-only">Actions</span>
@@ -102,7 +104,7 @@ function TransactionsTable({ transactions }: TransactionsTableProps) {
           <TableBody>
             {transactions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   No transactions yet.
                 </TableCell>
               </TableRow>
@@ -111,16 +113,17 @@ function TransactionsTable({ transactions }: TransactionsTableProps) {
                 <TableRow key={transaction.id}>
                   <TableCell>
                     <div className="font-medium">{transaction.description}</div>
-                    <div className="text-sm text-muted-foreground md:hidden">
-                      {format(transaction.date, "MMM d, yyyy")}
-                    </div>
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell">
+                  <TableCell>
                     {transaction.type === 'expense' ? (
                       <Badge variant="outline">{transaction.category}</Badge>
                     ) : (
                       <Badge variant="secondary">Income</Badge>
                     )}
+                  </TableCell>
+                   <TableCell>{transaction.paymentMethod}</TableCell>
+                   <TableCell>
+                    {format(transaction.date, "MMM d, yyyy")}
                   </TableCell>
                   <TableCell className={cn(
                       "text-right font-medium",
