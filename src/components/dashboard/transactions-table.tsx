@@ -23,13 +23,29 @@ import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { EXPENSE_CATEGORIES } from "@/lib/constants";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/hooks/use-auth";
+import { getPaymentMethods } from "@/lib/db-books";
 
 type TransactionsTableProps = {
   transactions: Transaction[];
 };
 
 function TransactionsTable({ transactions }: TransactionsTableProps) {
+  const { user } = useAuth();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [paymentMethods, setPaymentMethods] = useState<{ id: string; name: string }[]>([]);
   const [editForm, setEditForm] = useState({
     description: "",
     amount: 0,
@@ -39,17 +55,21 @@ function TransactionsTable({ transactions }: TransactionsTableProps) {
 
   const handleDelete = async (id: string) => {
     await deleteDoc(doc(db, "transactions", id));
-    window.location.reload(); // Simple way to refresh, can be improved
+    window.location.reload(); 
   };
 
-  const handleEdit = (transaction: Transaction) => {
+  const handleEdit = async (transaction: Transaction) => {
     setEditingTransaction(transaction);
     setEditForm({
       description: transaction.description,
       amount: transaction.amount,
-      category: transaction.category,
+      category: transaction.category || "",
       paymentMethod: transaction.paymentMethod,
     });
+    if (user) {
+      const methods = await getPaymentMethods(user.uid);
+      setPaymentMethods(methods);
+    }
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -67,76 +87,83 @@ function TransactionsTable({ transactions }: TransactionsTableProps) {
 
   return (
     <>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Description</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead className="hidden md:table-cell">Payment Method</TableHead>
-            <TableHead className="hidden md:table-cell">Date</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-            <TableHead>
-              <span className="sr-only">Actions</span>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {transactions.map((transaction) => (
-            <TableRow key={transaction.id}>
-              <TableCell className="font-medium">
-                {transaction.description}
-              </TableCell>
-              <TableCell>
-                {transaction.type === 'expense' ? (
-                  <Badge variant="outline">{transaction.category}</Badge>
-                ) : (
-                  <Badge variant="secondary">Income</Badge>
-                )}
-              </TableCell>
-              <TableCell className="hidden md:table-cell">{transaction.paymentMethod}</TableCell>
-              <TableCell className="hidden md:table-cell">
-                {format(transaction.date, "PPP")}
-              </TableCell>
-              <TableCell className={cn(
-                  "text-right font-medium",
-                  transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-              )}>
-                {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
-              </TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button aria-haspopup="true" size="icon" variant="ghost">
-                      <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Toggle menu</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => handleEdit(transaction)}>
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleDelete(transaction.id)}>
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Description</TableHead>
+              <TableHead className="hidden sm:table-cell">Category</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+              <TableHead>
+                <span className="sr-only">Actions</span>
+              </TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      {editingTransaction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <form
-            className="bg-white p-6 rounded shadow w-full max-w-md"
-            onSubmit={handleEditSubmit}
-          >
-            <h2 className="text-lg font-bold mb-4">Edit Transaction</h2>
-            <div className="mb-2">
-              <label className="block mb-1">Description</label>
-              <input
-                className="w-full border px-2 py-1 rounded"
+          </TableHeader>
+          <TableBody>
+            {transactions.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="h-24 text-center">
+                  No transactions yet.
+                </TableCell>
+              </TableRow>
+            ) : (
+              transactions.map((transaction) => (
+                <TableRow key={transaction.id}>
+                  <TableCell>
+                    <div className="font-medium">{transaction.description}</div>
+                    <div className="text-sm text-muted-foreground md:hidden">
+                      {format(transaction.date, "MMM d, yyyy")}
+                    </div>
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    {transaction.type === 'expense' ? (
+                      <Badge variant="outline">{transaction.category}</Badge>
+                    ) : (
+                      <Badge variant="secondary">Income</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className={cn(
+                      "text-right font-medium",
+                      transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                  )}>
+                    {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Toggle menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleEdit(transaction)}>
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDelete(transaction.id)}>
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      
+      <Dialog open={!!editingTransaction} onOpenChange={(isOpen) => !isOpen && setEditingTransaction(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Transaction</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Input
+                id="edit-description"
                 value={editForm.description}
                 onChange={(e) =>
                   setEditForm((f) => ({ ...f, description: e.target.value }))
@@ -144,11 +171,12 @@ function TransactionsTable({ transactions }: TransactionsTableProps) {
                 required
               />
             </div>
-            <div className="mb-2">
-              <label className="block mb-1">Amount</label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="edit-amount">Amount</Label>
+              <Input
+                id="edit-amount"
                 type="number"
-                className="w-full border px-2 py-1 rounded"
+                step="0.01"
                 value={editForm.amount}
                 onChange={(e) =>
                   setEditForm((f) => ({ ...f, amount: Number(e.target.value) }))
@@ -156,43 +184,49 @@ function TransactionsTable({ transactions }: TransactionsTableProps) {
                 required
               />
             </div>
-            {editingTransaction.type === 'expense' && (
-                 <div className="mb-2">
-                 <label className="block mb-1">Category</label>
-                 <input
-                   className="w-full border px-2 py-1 rounded"
-                   value={editForm.category}
-                   onChange={(e) =>
-                     setEditForm((f) => ({ ...f, category: e.target.value }))
-                   }
-                   required
-                 />
-               </div>
+            {editingTransaction?.type === 'expense' && (
+              <div className="space-y-2">
+                <Label htmlFor="edit-category">Category</Label>
+                <Select
+                  value={editForm.category}
+                  onValueChange={(value) => setEditForm(f => ({ ...f, category: value }))}
+                >
+                  <SelectTrigger id="edit-category">
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EXPENSE_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
-             <div className="mb-4">
-              <label className="block mb-1">Payment Method</label>
-              <input
-                className="w-full border px-2 py-1 rounded"
-                value={editForm.paymentMethod}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, paymentMethod: e.target.value }))
-                }
-                required
-              />
+            <div className="space-y-2">
+              <Label htmlFor="edit-paymentMethod">Payment Method</Label>
+               <Select
+                  value={editForm.paymentMethod}
+                  onValueChange={(value) => setEditForm(f => ({ ...f, paymentMethod: value }))}
+                >
+                  <SelectTrigger id="edit-paymentMethod">
+                    <SelectValue placeholder="Select a method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {paymentMethods.map((method) => (
+                      <SelectItem key={method.id} value={method.name}>{method.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
             </div>
-            <div className="flex gap-2">
-              <Button type="submit">Save</Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setEditingTransaction(null)}
-              >
-                Cancel
-              </Button>
-            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button type="submit">Save Changes</Button>
+            </DialogFooter>
           </form>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
