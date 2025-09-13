@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import OverviewCards from "@/components/dashboard/overview-cards";
 import CategoryPieChart from "@/components/dashboard/category-pie-chart";
@@ -25,6 +25,7 @@ interface Book {
   balance?: number;
   expenses?: number;
   income?: number;
+  createdAt: any;
 }
 
 // Modal component for creating a new book
@@ -128,8 +129,9 @@ const Dashboard = ({
 interface CashBookProps {
   book: Book;
   onBack: () => void;
+  onTransactionAdded: () => void;
 }
-const CashBook = ({ book, onBack }: CashBookProps) => {
+const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -188,7 +190,7 @@ const CashBook = ({ book, onBack }: CashBookProps) => {
               <CategoryPieChart expenses={expenses} />
             </div>
           </div>
-          <RecentTransactions transactions={recentTransactions} bookId={book.id} isLoading={loading} />
+          <RecentTransactions transactions={recentTransactions} bookId={book.id} isLoading={loading} onTransactionAdded={onTransactionAdded} />
         </div>
       </div>
     </div>
@@ -203,26 +205,39 @@ export default function DashboardPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchBooks = useCallback(async () => {
+    if (user) {
+      setIsLoading(true);
+      const userBooks = await getBooks(user.uid);
+      const sortedBooks = userBooks.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+      setBooks(
+        sortedBooks.map((b: any) => ({
+          id: b.id,
+          name: b.name ?? "Untitled",
+          balance: b.balance ?? 0,
+          expenses: b.expenses ?? 0,
+          income: b.income ?? 0,
+          createdAt: b.createdAt,
+        }))
+      );
+      setIsLoading(false);
+    }
+  }, [user]);
 
   useEffect(() => {
-    async function fetchBooks() {
-      if (user) {
-        setIsLoading(true);
-        const userBooks = await getBooks(user.uid);
-        setBooks(
-          userBooks.map((b: any) => ({
-            id: b.id,
-            name: b.name ?? "Untitled",
-            balance: b.balance ?? 0,
-            expenses: b.expenses ?? 0,
-            income: b.income ?? 0,
-          }))
-        );
-        setIsLoading(false);
+    fetchBooks();
+  }, [fetchBooks]);
+  
+  const handleRefreshData = useCallback(async () => {
+    await fetchBooks();
+    if (selectedBook) {
+      // Find the updated book from the refreshed list
+      const updatedBook = books.find(b => b.id === selectedBook.id);
+      if (updatedBook) {
+        setSelectedBook(updatedBook);
       }
     }
-    fetchBooks();
-  }, [user]);
+  }, [fetchBooks, selectedBook, books]);
 
   const handleCreateBook = async (bookName: string) => {
     if (!user) return;
@@ -230,18 +245,16 @@ export default function DashboardPage() {
     await createBook({ name: bookName, userId: user.uid });
     setIsNewBookModalOpen(false);
     // Refresh books
-    const userBooks = await getBooks(user.uid);
-    setBooks(
-      userBooks.map((b: any) => ({
-        id: b.id,
-        name: b.name ?? "Untitled",
-        balance: b.balance ?? 0,
-        expenses: b.expenses ?? 0,
-        income: b.income ?? 0,
-      }))
-    );
+    await fetchBooks();
     setIsLoading(false);
   };
+  
+  const handleSelectBook = useCallback((book: Book) => {
+      const fullBookDetails = books.find(b => b.id === book.id);
+      if(fullBookDetails) {
+          setSelectedBook(fullBookDetails);
+      }
+  }, [books]);
 
   if (isLoading) {
     return (
@@ -263,10 +276,10 @@ export default function DashboardPage() {
     <>
       {/* Content based on selected view */}
       {selectedBook ? (
-        <CashBook book={selectedBook} onBack={() => setSelectedBook(null)} />
+        <CashBook book={selectedBook} onBack={() => setSelectedBook(null)} onTransactionAdded={handleRefreshData}/>
       ) : (
         <Dashboard
-          onSelectBook={setSelectedBook}
+          onSelectBook={handleSelectBook}
           onOpenModal={() => setIsNewBookModalOpen(true)}
           books={books}
         />

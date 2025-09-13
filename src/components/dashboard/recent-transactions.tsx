@@ -15,9 +15,10 @@ interface RecentTransactionsProps {
   transactions: Transaction[];
   bookId: string;
   isLoading: boolean;
+  onTransactionAdded?: () => void;
 }
 
-export default function RecentTransactions({ transactions, bookId, isLoading }: RecentTransactionsProps) {
+export default function RecentTransactions({ transactions, bookId, isLoading, onTransactionAdded }: RecentTransactionsProps) {
   return (
     <Card>
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -27,7 +28,7 @@ export default function RecentTransactions({ transactions, bookId, isLoading }: 
             Here are your most recent transactions.
           </CardDescription>
         </div>
-        <AddTransactionSheet bookId={bookId} />
+        <AddTransactionSheet bookId={bookId} onTransactionAdded={onTransactionAdded} />
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -37,7 +38,7 @@ export default function RecentTransactions({ transactions, bookId, isLoading }: 
             <Skeleton className="h-10 w-full" />
           </div>
         ) : (
-          <TransactionsTable transactions={transactions} />
+          <TransactionsTable transactions={transactions} onTransactionChange={onTransactionAdded} />
         )}
       </CardContent>
     </Card>

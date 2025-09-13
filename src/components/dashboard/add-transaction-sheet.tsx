@@ -62,9 +62,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface AddTransactionSheetProps {
   bookId: string;
+  onTransactionAdded?: () => void;
 }
 
-function AddTransactionSheet({ bookId }: AddTransactionSheetProps) {
+function AddTransactionSheet({ bookId, onTransactionAdded }: AddTransactionSheetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [suggestedCategories, setSuggestedCategories] = useState<string[]>([]);
   const [isSuggesting, startSuggestionTransition] = useTransition();
@@ -144,11 +145,11 @@ function AddTransactionSheet({ bookId }: AddTransactionSheetProps) {
         title: "Transaction Added",
         description: "Your transaction has been successfully added.",
       });
-
+      
+      onTransactionAdded?.();
       form.reset();
       setSuggestedCategories([]);
       setIsOpen(false);
-      window.location.reload(); 
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -186,8 +187,8 @@ function AddTransactionSheet({ bookId }: AddTransactionSheetProps) {
             </span>
           </Button>
         </SheetTrigger>
-        <SheetContent className="flex flex-col gap-0">
-          <SheetHeader>
+        <SheetContent className="flex flex-col gap-0 p-0">
+          <SheetHeader className="p-6">
             <SheetTitle>Add a new transaction</SheetTitle>
             <SheetDescription>
               Fill in the details of your transaction below. Click save when
@@ -199,7 +200,7 @@ function AddTransactionSheet({ bookId }: AddTransactionSheetProps) {
               onSubmit={form.handleSubmit(onSubmit)}
               className="flex flex-col flex-1 overflow-hidden"
             >
-              <ScrollArea className="flex-1 pr-6 -mr-6">
+              <ScrollArea className="flex-1 px-6">
                 <div className="space-y-4 py-4">
                   <FormField
                     control={form.control}
@@ -418,7 +419,7 @@ function AddTransactionSheet({ bookId }: AddTransactionSheetProps) {
                   />
                 </div>
               </ScrollArea>
-              <SheetFooter className="pt-4 border-t">
+              <SheetFooter className="p-6 pt-4 border-t">
                 <SheetClose asChild>
                   <Button type="button" variant="outline">
                     Cancel

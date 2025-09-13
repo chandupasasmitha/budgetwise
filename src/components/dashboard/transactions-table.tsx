@@ -40,9 +40,10 @@ import { getPaymentMethods } from "@/lib/db-books";
 
 type TransactionsTableProps = {
   transactions: Transaction[];
+  onTransactionChange?: () => void;
 };
 
-function TransactionsTable({ transactions }: TransactionsTableProps) {
+function TransactionsTable({ transactions, onTransactionChange }: TransactionsTableProps) {
   const { user } = useAuth();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<{ id: string; name: string }[]>([]);
@@ -55,7 +56,7 @@ function TransactionsTable({ transactions }: TransactionsTableProps) {
 
   const handleDelete = async (id: string) => {
     await deleteDoc(doc(db, "transactions", id));
-    window.location.reload(); 
+    onTransactionChange?.();
   };
 
   const handleEdit = async (transaction: Transaction) => {
@@ -82,7 +83,7 @@ function TransactionsTable({ transactions }: TransactionsTableProps) {
       paymentMethod: editForm.paymentMethod,
     });
     setEditingTransaction(null);
-    window.location.reload();
+    onTransactionChange?.();
   };
 
   return (
