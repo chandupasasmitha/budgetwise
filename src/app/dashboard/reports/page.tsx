@@ -1,10 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import TopCategoriesChart from "@/components/dashboard/top-categories-chart";
 import SpendingComparisonChart from "@/components/dashboard/spending-comparison-chart";
-import ExpensesTable from "@/components/dashboard/expenses-table";
+import TransactionsTable from "@/components/dashboard/transactions-table";
 import { mockExpenses } from "@/lib/mock-data";
+import type { Transaction } from "@/lib/types";
 
 export default function ReportsPage() {
+    const transactions: Transaction[] = mockExpenses.map(expense => ({
+        ...expense,
+        type: 'expense'
+    }));
+
     return (
         <div className="flex flex-col gap-6">
             <h1 className="text-2xl font-semibold">Spending Analytics</h1>
@@ -34,7 +40,7 @@ export default function ReportsPage() {
                     <CardDescription>A complete list of all your transactions.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <ExpensesTable expenses={[...mockExpenses].sort((a,b) => b.date.getTime() - a.date.getTime())} />
+                    <TransactionsTable transactions={[...transactions].sort((a,b) => b.date.getTime() - a.date.getTime())} />
                 </CardContent>
             </Card>
         </div>
