@@ -12,6 +12,12 @@ import {
 } from "@/lib/db-books";
 import { useAuth } from "@/hooks/use-auth";
 import type { Transaction } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { ArrowLeft } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+
 
 interface Book {
   id: string;
@@ -29,41 +35,32 @@ interface NewBookModalProps {
 }
 const NewBookModal = ({ isOpen, onClose, onSave }: NewBookModalProps) => {
   const [bookName, setBookName] = useState("");
-  if (!isOpen) return null;
   const handleSave = () => {
     if (bookName.trim()) {
       onSave(bookName.trim());
       setBookName("");
     }
   };
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900 bg-opacity-50">
-      <div className="w-full max-w-sm p-6 bg-white rounded-xl shadow-2xl">
-        <h2 className="mb-4 text-xl font-bold">Create New Cash Book</h2>
-        <input
-          type="text"
-          className="w-full p-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="e.g., January Budget, Home Renovation"
-          value={bookName}
-          onChange={(e) => setBookName(e.target.value)}
-        />
-        <div className="flex justify-end space-x-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors duration-200"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors duration-200"
-          >
-            Create
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Create New Cash Book</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+                <Input
+                    placeholder="e.g., January Budget, Home Renovation"
+                    value={bookName}
+                    onChange={(e) => setBookName(e.target.value)}
+                />
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={onClose}>Cancel</Button>
+                <Button onClick={handleSave}>Create</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
   );
 };
 
@@ -79,28 +76,25 @@ const Dashboard = ({
   books,
 }: DashboardProps) => {
   return (
-    <div className="flex-1 p-6 space-y-8 overflow-y-auto">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Your Cash Books</h1>
-        <button
-          onClick={onOpenModal}
-          className="px-6 py-2 font-medium text-white bg-blue-600 rounded-full shadow-lg hover:bg-blue-700 transition-colors duration-200"
-        >
+    <div className="flex-1 space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold">Your Cash Books</h1>
+        <Button onClick={onOpenModal}>
           Create New Book
-        </button>
+        </Button>
       </div>
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {books.map((book) => (
           <div
             key={book.id}
             onClick={() => onSelectBook(book)}
-            className="p-6 transition-transform transform bg-white rounded-xl shadow-md cursor-pointer hover:scale-[1.02] hover:shadow-xl"
+            className="p-6 transition-transform transform bg-card rounded-xl shadow-sm cursor-pointer hover:scale-[1.02] hover:shadow-lg"
           >
-            <h2 className="mb-2 text-xl font-semibold text-gray-800">
+            <h2 className="mb-2 text-xl font-semibold text-card-foreground">
               {book.name}
             </h2>
-            <p className="text-sm text-gray-500">
-              <span className="font-medium text-gray-700">Balance:</span>
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Balance:</span>
               <span
                 className={`ml-2 font-bold ${
                   (book.balance ?? 0) >= 0 ? "text-green-600" : "text-red-600"
@@ -109,15 +103,15 @@ const Dashboard = ({
                 ${(book.balance ?? 0).toLocaleString()}
               </span>
             </p>
-            <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
+            <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
               <p>
-                <span className="font-medium text-gray-700">Income:</span>
+                <span className="font-medium text-foreground">Income:</span>
                 <span className="ml-1 text-green-500">
                   ${(book.income ?? 0).toLocaleString()}
                 </span>
               </p>
               <p>
-                <span className="font-medium text-gray-700">Expenses:</span>
+                <span className="font-medium text-foreground">Expenses:</span>
                 <span className="ml-1 text-red-500">
                   ${(book.expenses ?? 0).toLocaleString()}
                 </span>
@@ -150,36 +144,23 @@ const CashBook = ({ book, onBack }: CashBookProps) => {
     fetchTransactions();
   }, [book]);
 
-  const recentTransactions = transactions.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 10);
+  const recentTransactions = transactions.slice(0, 10);
   const expenses = transactions.filter(t => t.type === 'expense');
 
   return (
-    <div className="flex-1 p-6 space-y-8 overflow-y-auto">
-      <button
+    <div className="flex-1 space-y-6">
+      <Button
         onClick={onBack}
-        className="flex items-center px-4 py-2 font-medium text-gray-600 rounded-full transition-colors duration-200 hover:bg-gray-200"
+        variant="ghost"
+        className="flex items-center"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-4 h-4 mr-2"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
+        <ArrowLeft className="w-4 h-4 mr-2" />
         Back to Dashboard
-      </button>
+      </Button>
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">{book.name}</h1>
-        <div className="flex items-center space-x-4">
-          <p className="text-2xl font-bold">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <h1 className="text-2xl md:text-3xl font-bold">{book.name}</h1>
+        <div className="text-lg sm:text-2xl font-bold">
             Balance:{" "}
             <span
               className={
@@ -188,28 +169,26 @@ const CashBook = ({ book, onBack }: CashBookProps) => {
             >
               ${(book.balance ?? 0).toLocaleString()}
             </span>
-          </p>
-        </div>
+          </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <OverviewCards transactions={transactions} />
       </div>
-      <div className="mt-4 grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
-        <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
-            <div className="sm:col-span-2 bg-white rounded-xl shadow-md p-4">
+      <div className="grid gap-4 xl:grid-cols-3">
+        <div className="grid auto-rows-max items-start gap-4 xl:col-span-3">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-1 bg-card rounded-xl shadow-sm p-4">
               <h3 className="mb-2 text-lg font-semibold">Spending Trend</h3>
               <SpendingTrendChart expenses={expenses} />
             </div>
-            <div className="sm:col-span-2 bg-white rounded-xl shadow-md p-4">
+            <div className="sm:col-span-1 bg-card rounded-xl shadow-sm p-4">
               <h3 className="mb-2 text-lg font-semibold">Category Breakdown</h3>
               <CategoryPieChart expenses={expenses} />
             </div>
           </div>
           <RecentTransactions transactions={recentTransactions} bookId={book.id} isLoading={loading} />
         </div>
-        <div className="hidden xl:block"></div>
       </div>
     </div>
   );
@@ -221,10 +200,13 @@ export default function DashboardPage() {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [isNewBookModalOpen, setIsNewBookModalOpen] = useState(false);
   const [books, setBooks] = useState<Book[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
 
   useEffect(() => {
     async function fetchBooks() {
       if (user) {
+        setIsLoading(true);
         const userBooks = await getBooks(user.uid);
         setBooks(
           userBooks.map((b: any) => ({
@@ -235,6 +217,7 @@ export default function DashboardPage() {
             income: b.income ?? 0,
           }))
         );
+        setIsLoading(false);
       }
     }
     fetchBooks();
@@ -242,6 +225,7 @@ export default function DashboardPage() {
 
   const handleCreateBook = async (bookName: string) => {
     if (!user) return;
+    setIsLoading(true);
     await createBook({ name: bookName, userId: user.uid });
     setIsNewBookModalOpen(false);
     // Refresh books
@@ -255,7 +239,24 @@ export default function DashboardPage() {
         income: b.income ?? 0,
       }))
     );
+    setIsLoading(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 space-y-6">
+        <div className="flex items-center justify-between">
+            <Skeleton className="h-10 w-48" />
+            <Skeleton className="h-10 w-36" />
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <Skeleton className="h-36" />
+            <Skeleton className="h-36" />
+            <Skeleton className="h-36" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>

@@ -56,7 +56,7 @@ export function SignupForm() {
           Enter your information to create an account
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="grid gap-4">
         <form onSubmit={handleSubmit} className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="full-name">Full name</Label>

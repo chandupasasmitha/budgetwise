@@ -74,7 +74,7 @@ export function LoginForm() {
           Enter your email below to login to your account
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="grid gap-4">
         <form onSubmit={handleSubmit} className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
@@ -110,7 +110,7 @@ export function LoginForm() {
             Login
           </Button>
         </form>
-        <Separator className="my-6" />
+        <Separator/>
         <Button variant="outline" className="w-full">
           <GoogleIcon className="mr-2 h-4 w-4" />
           Login with Google

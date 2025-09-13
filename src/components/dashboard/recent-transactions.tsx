@@ -9,6 +9,7 @@ import {
 import type { Transaction } from "@/lib/types";
 import AddTransactionSheet from "./add-transaction-sheet";
 import TransactionsTable from "./transactions-table";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface RecentTransactionsProps {
   transactions: Transaction[];
@@ -19,20 +20,22 @@ interface RecentTransactionsProps {
 export default function RecentTransactions({ transactions, bookId, isLoading }: RecentTransactionsProps) {
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="grid gap-2">
           <CardTitle>Recent Transactions</CardTitle>
           <CardDescription>
             Here are your most recent transactions.
           </CardDescription>
         </div>
-        <div className="ml-auto flex items-center gap-2">
-          <AddTransactionSheet bookId={bookId} />
-        </div>
+        <AddTransactionSheet bookId={bookId} />
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div>Loading...</div>
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
         ) : (
           <TransactionsTable transactions={transactions} />
         )}
