@@ -23,11 +23,10 @@ export async function getBooks(userId: string) {
 export async function getTransactionsForBook(bookId: string): Promise<Expense[]> {
   const q = query(
     collection(db, "expenses"), 
-    where("bookId", "==", bookId),
-    orderBy("date", "desc")
+    where("bookId", "==", bookId)
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => {
+  const expenses = snapshot.docs.map(doc => {
     const data = doc.data();
     return {
       id: doc.id,
@@ -37,6 +36,7 @@ export async function getTransactionsForBook(bookId: string): Promise<Expense[]>
       date: data.date.toDate(),
     };
   });
+  return expenses.sort((a, b) => b.date.getTime() - a.date.getTime());
 }
 
 export async function addTransaction({ bookId, type, amount, description, date }: { bookId: string; type: "income" | "expense"; amount: number; description: string; date: Date }) {
