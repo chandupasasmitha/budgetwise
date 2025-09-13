@@ -1,6 +1,6 @@
 import { db } from "@/lib/firebase";
 import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, orderBy } from "firebase/firestore";
-import type { Expense } from "./types";
+import type { Transaction } from "./types";
 
 export async function createBook({ name, userId }: { name: string; userId: string }) {
   const docRef = await addDoc(collection(db, "books"), {
@@ -20,13 +20,13 @@ export async function getBooks(userId: string) {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
-export async function getTransactionsForBook(bookId: string): Promise<Expense[]> {
+export async function getTransactionsForBook(bookId: string): Promise<Transaction[]> {
   const q = query(
-    collection(db, "expenses"), 
+    collection(db, "transactions"), 
     where("bookId", "==", bookId)
   );
   const snapshot = await getDocs(q);
-  const expenses = snapshot.docs.map(doc => {
+  const transactions = snapshot.docs.map(doc => {
     const data = doc.data();
     return {
       id: doc.id,
@@ -34,18 +34,20 @@ export async function getTransactionsForBook(bookId: string): Promise<Expense[]>
       amount: data.amount,
       category: data.category,
       date: data.date.toDate(),
+      type: data.type,
     };
   });
-  return expenses.sort((a, b) => b.date.getTime() - a.date.getTime());
+  return transactions;
 }
 
-export async function addTransaction({ bookId, type, amount, description, date }: { bookId: string; type: "income" | "expense"; amount: number; description: string; date: Date }) {
+export async function addTransaction({ bookId, type, amount, description, date, category }: { bookId: string; type: "income" | "expense"; amount: number; description: string; date: Date, category?: string }) {
   await addDoc(collection(db, "transactions"), {
     bookId,
     type,
     amount,
     description,
     date: Timestamp.fromDate(date),
+    category: category || null,
   });
 }
 

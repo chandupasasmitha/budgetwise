@@ -4,14 +4,14 @@ import { createPortal } from "react-dom";
 import OverviewCards from "@/components/dashboard/overview-cards";
 import CategoryPieChart from "@/components/dashboard/category-pie-chart";
 import SpendingTrendChart from "@/components/dashboard/spending-trend-chart";
-import RecentExpenses from "@/components/dashboard/recent-expenses";
+import RecentTransactions from "@/components/dashboard/recent-expenses";
 import {
   createBook,
   getBooks,
   getTransactionsForBook,
 } from "@/lib/db-books";
 import { useAuth } from "@/hooks/use-auth";
-import type { Expense } from "@/lib/types";
+import type { Transaction } from "@/lib/types";
 
 interface Book {
   id: string;
@@ -136,21 +136,22 @@ interface CashBookProps {
   onBack: () => void;
 }
 const CashBook = ({ book, onBack }: CashBookProps) => {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchExpenses() {
+    async function fetchTransactions() {
       if (!book) return;
       setLoading(true);
-      const expensesData = await getTransactionsForBook(book.id);
-      setExpenses(expensesData);
+      const transactionsData = await getTransactionsForBook(book.id);
+      setTransactions(transactionsData);
       setLoading(false);
     }
-    fetchExpenses();
+    fetchTransactions();
   }, [book]);
 
-  const recentExpenses = expenses.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 10);
+  const recentTransactions = transactions.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 10);
+  const expenses = transactions.filter(t => t.type === 'expense');
 
   return (
     <div className="flex-1 p-6 space-y-8 overflow-y-auto">
@@ -192,7 +193,7 @@ const CashBook = ({ book, onBack }: CashBookProps) => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-        <OverviewCards expenses={expenses} />
+        <OverviewCards transactions={transactions} />
       </div>
       <div className="mt-4 grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
         <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
@@ -206,7 +207,7 @@ const CashBook = ({ book, onBack }: CashBookProps) => {
               <CategoryPieChart expenses={expenses} />
             </div>
           </div>
-          <RecentExpenses expenses={recentExpenses} bookId={book.id} isLoading={loading} />
+          <RecentTransactions transactions={recentTransactions} bookId={book.id} isLoading={loading} />
         </div>
         <div className="hidden xl:block"></div>
       </div>

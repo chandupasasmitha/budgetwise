@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PlusCircle, CalendarIcon, Loader2 } from "lucide-react";
@@ -41,29 +41,31 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { EXPENSE_CATEGORIES } from "@/lib/constants";
-import { expenseSchema, type ExpenseFormData } from "@/lib/schemas";
+import { transactionSchema, type TransactionFormData } from "@/lib/schemas";
 import { suggestCategoriesAction } from "@/app/actions";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
 
-interface AddExpenseSheetProps {
+interface AddTransactionSheetProps {
   bookId: string;
 }
 
-function AddExpenseSheet({ bookId }: AddExpenseSheetProps) {
+function AddTransactionSheet({ bookId }: AddTransactionSheetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [suggestedCategories, setSuggestedCategories] = useState<string[]>([]);
   const [isSuggesting, startSuggestionTransition] = useTransition();
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const form = useForm<ExpenseFormData>({
-    resolver: zodResolver(expenseSchema),
+  const form = useForm<TransactionFormData>({
+    resolver: zodResolver(transactionSchema),
     defaultValues: {
+      type: "expense",
       description: "",
       amount: 0,
       category: "",
@@ -71,15 +73,25 @@ function AddExpenseSheet({ bookId }: AddExpenseSheetProps) {
     },
   });
 
-  const onSubmit = async (data: ExpenseFormData) => {
+  const transactionType = form.watch("type");
+
+  useEffect(() => {
+    if (transactionType === 'income') {
+      form.setValue('category', undefined);
+      setSuggestedCategories([]);
+    }
+  }, [transactionType, form]);
+
+  const onSubmit = async (data: TransactionFormData) => {
     try {
       if (!user) throw new Error("User not logged in");
       if (!bookId) throw new Error("No cash book selected");
 
-      await addDoc(collection(db, "expenses"), {
+      await addDoc(collection(db, "transactions"), {
+        type: data.type,
         description: data.description,
         amount: data.amount,
-        category: data.category,
+        category: data.category || null,
         date: Timestamp.fromDate(new Date(data.date)),
         createdAt: Timestamp.now(),
         userId: user.uid,
@@ -87,20 +99,19 @@ function AddExpenseSheet({ bookId }: AddExpenseSheetProps) {
       });
 
       toast({
-        title: "Expense Added",
-        description: "Your expense has been successfully added and saved.",
+        title: "Transaction Added",
+        description: "Your transaction has been successfully added.",
       });
 
       form.reset();
       setSuggestedCategories([]);
       setIsOpen(false);
-      // NOTE: Consider a better way to refresh data than a full reload
       window.location.reload(); 
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error saving expense",
-        description: error.message || "Failed to save expense.",
+        title: "Error saving transaction",
+        description: error.message || "Failed to save transaction.",
       });
     }
   };
@@ -128,15 +139,15 @@ function AddExpenseSheet({ bookId }: AddExpenseSheetProps) {
         <Button size="sm" className="h-8 gap-1">
           <PlusCircle className="h-3.5 w-3.5" />
           <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Add Expense
+            Add Transaction
           </span>
         </Button>
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Add a new expense</SheetTitle>
+          <SheetTitle>Add a new transaction</SheetTitle>
           <SheetDescription>
-            Fill in the details of your expense below. Click save when
+            Fill in the details of your transaction below. Click save when
             you&apos;re done.
           </SheetDescription>
         </SheetHeader>
@@ -147,13 +158,44 @@ function AddExpenseSheet({ bookId }: AddExpenseSheetProps) {
           >
             <FormField
               control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Transaction Type</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex space-x-4"
+                    >
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="income" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Income</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="expense" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Expense</FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="e.g. Coffee with a friend"
+                      placeholder="e.g. Monthly salary or Coffee with a friend"
                       {...field}
                     />
                   </FormControl>
@@ -161,38 +203,44 @@ function AddExpenseSheet({ bookId }: AddExpenseSheetProps) {
                 </FormItem>
               )}
             />
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={handleSuggestCategory}
-              disabled={isSuggesting}
-            >
-              {isSuggesting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Suggest Category with AI
-            </Button>
-            {suggestedCategories.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {suggestedCategories.map((cat) => (
-                  <Badge
-                    key={cat}
-                    variant="secondary"
-                    className="cursor-pointer"
-                    onClick={() => {
-                      if (EXPENSE_CATEGORIES.includes(cat)) {
-                        form.setValue("category", cat);
-                      } else {
-                        form.setValue("category", "Other");
-                      }
-                    }}
-                  >
-                    {cat}
-                  </Badge>
-                ))}
-              </div>
+
+            {transactionType === 'expense' && (
+                <>
+                    <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleSuggestCategory}
+                    disabled={isSuggesting}
+                    >
+                    {isSuggesting ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Suggest Category with AI
+                    </Button>
+                    {suggestedCategories.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                        {suggestedCategories.map((cat) => (
+                        <Badge
+                            key={cat}
+                            variant="secondary"
+                            className="cursor-pointer"
+                            onClick={() => {
+                            if (EXPENSE_CATEGORIES.includes(cat)) {
+                                form.setValue("category", cat);
+                            } else {
+                                form.setValue("category", "Other");
+                            }
+                            }}
+                        >
+                            {cat}
+                        </Badge>
+                        ))}
+                    </div>
+                    )}
+                </>
             )}
+
             <FormField
               control={form.control}
               name="amount"
@@ -211,34 +259,38 @@ function AddExpenseSheet({ bookId }: AddExpenseSheetProps) {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {EXPENSE_CATEGORIES.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            
+            {transactionType === 'expense' && (
+                 <FormField
+                 control={form.control}
+                 name="category"
+                 render={({ field }) => (
+                   <FormItem>
+                     <FormLabel>Category</FormLabel>
+                     <Select
+                       onValueChange={field.onChange}
+                       defaultValue={field.value}
+                       value={field.value}
+                     >
+                       <FormControl>
+                         <SelectTrigger>
+                           <SelectValue placeholder="Select a category" />
+                         </SelectTrigger>
+                       </FormControl>
+                       <SelectContent>
+                         {EXPENSE_CATEGORIES.map((category) => (
+                           <SelectItem key={category} value={category}>
+                             {category}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                     <FormMessage />
+                   </FormItem>
+                 )}
+               />
+            )}
+
             <FormField
               control={form.control}
               name="date"
@@ -286,7 +338,7 @@ function AddExpenseSheet({ bookId }: AddExpenseSheetProps) {
                   Cancel
                 </Button>
               </SheetClose>
-              <Button type="submit">Save expense</Button>
+              <Button type="submit">Save Transaction</Button>
             </SheetFooter>
           </form>
         </Form>
@@ -295,4 +347,4 @@ function AddExpenseSheet({ bookId }: AddExpenseSheetProps) {
   );
 }
 
-export default AddExpenseSheet;
+export default AddTransactionSheet;

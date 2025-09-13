@@ -6,28 +6,29 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { Expense } from "@/lib/types";
-import AddExpenseSheet from "./add-expense-sheet";
+import type { Transaction } from "@/lib/types";
+import AddTransactionSheet from "./add-transaction-sheet";
 import ExpensesTable from "./expenses-table";
 
-interface RecentExpensesProps {
-  expenses: Expense[];
+interface RecentTransactionsProps {
+  transactions: Transaction[];
   bookId: string;
   isLoading: boolean;
 }
 
-export default function RecentExpenses({ expenses, bookId, isLoading }: RecentExpensesProps) {
+export default function RecentTransactions({ transactions, bookId, isLoading }: RecentTransactionsProps) {
+  const expenses = transactions.filter(t => t.type === 'expense');
   return (
     <Card>
       <CardHeader className="flex flex-row items-center">
         <div className="grid gap-2">
-          <CardTitle>Recent Expenses</CardTitle>
+          <CardTitle>Recent Transactions</CardTitle>
           <CardDescription>
             Here are your most recent transactions.
           </CardDescription>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <AddExpenseSheet bookId={bookId} />
+          <AddTransactionSheet bookId={bookId} />
         </div>
       </CardHeader>
       <CardContent>
