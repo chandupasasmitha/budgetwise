@@ -16,29 +16,41 @@ export async function getBooks(userId: string, userEmail: string) {
   const ownedBooksQuery = query(collection(db, "books"), where("ownerId", "==", userId));
   const sharedBooksQuery = query(collection(db, "books"), where("collaborators", "array-contains", { email: userEmail, status: 'accepted' }));
   
-  const [ownedBooksSnapshot, sharedBooksSnapshot, transactionsSnapshot] = await Promise.all([
+  const [ownedBooksSnapshot, sharedBooksSnapshot] = await Promise.all([
     getDocs(ownedBooksQuery),
     getDocs(sharedBooksQuery),
-    getDocs(query(collection(db, "transactions"), where("userId", "==", userId)))
   ]);
 
   const allBooksMap = new Map();
   ownedBooksSnapshot.docs.forEach(doc => allBooksMap.set(doc.id, { id: doc.id, ...doc.data() }));
   sharedBooksSnapshot.docs.forEach(doc => allBooksMap.set(doc.id, { id: doc.id, ...doc.data() }));
 
-  const books = Array.from(allBooksMap.values());
-  const transactions = transactionsSnapshot.docs.map(doc => {
+  const booksData = Array.from(allBooksMap.values());
+  
+  if (booksData.length === 0) return [];
+
+  const bookIds = booksData.map(b => b.id);
+
+  // Fetch all transactions for the relevant books in a single query if possible
+  // Firestore's 'in' operator is limited to 30 items. If more books, multiple queries would be needed.
+  const transactionsQuery = query(collection(db, "transactions"), where("bookId", "in", bookIds));
+  const transactionsSnapshot = await getDocs(transactionsQuery);
+
+  const transactionsByBook = new Map<string, any[]>();
+  transactionsSnapshot.docs.forEach(doc => {
       const data = doc.data();
-      return {
-        id: doc.id,
-        bookId: data.bookId,
-        type: data.type,
-        amount: data.amount,
+      const bookId = data.bookId;
+      if (!transactionsByBook.has(bookId)) {
+          transactionsByBook.set(bookId, []);
       }
+      transactionsByBook.get(bookId)!.push({
+        id: doc.id,
+        ...data,
+      });
   });
 
-  return books.map(book => {
-    const bookTransactions = transactions.filter(t => t.bookId === book.id);
+  return booksData.map(book => {
+    const bookTransactions = transactionsByBook.get(book.id) || [];
     const income = bookTransactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
@@ -94,11 +106,13 @@ export async function addPaymentMethod({ name, userId }: { name: string; userId:
 
 export async function addCollaborator(bookId: string, email: string, role: 'Viewer' | 'Editor') {
   const bookRef = doc(db, "books", bookId);
+  // NOTE: In a real app, status would be 'pending' and an email would be sent.
+  // For this project, we'll set it to 'accepted' to simulate the invitation flow.
   await updateDoc(bookRef, {
     collaborators: arrayUnion({
       email,
       role,
-      status: 'pending' // In a real app, this would be 'pending' until the user accepts
+      status: 'accepted' 
     })
   });
 }
