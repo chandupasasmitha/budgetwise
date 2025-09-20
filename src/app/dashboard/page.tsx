@@ -15,13 +15,15 @@ import type { Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import ManageCollaboratorsDialog from "@/components/dashboard/manage-collaborators-dialog";
 
 
 interface Book {
   id: string;
   name: string;
+  ownerId: string;
   balance?: number;
   expenses?: number;
   income?: number;
@@ -70,58 +72,86 @@ interface DashboardProps {
   onSelectBook: (book: Book) => void;
   onOpenModal: () => void;
   books: Book[];
+  currentUserId: string | undefined;
 }
 const Dashboard = ({
   onSelectBook,
   onOpenModal,
   books,
+  currentUserId,
 }: DashboardProps) => {
+  const [collaboratorsModalBook, setCollaboratorsModalBook] = useState<Book | null>(null);
+
+  const handleOpenCollaborators = (e: React.MouseEvent, book: Book) => {
+    e.stopPropagation(); // Prevent card click event
+    setCollaboratorsModalBook(book);
+  };
+
   return (
-    <div className="flex-1 space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h1 className="text-2xl md:text-3xl font-bold">Your Cash Books</h1>
-        <Button onClick={onOpenModal}>
-          Create New Book
-        </Button>
-      </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {books.map((book) => (
-          <div
-            key={book.id}
-            onClick={() => onSelectBook(book)}
-            className="p-6 transition-transform transform bg-card rounded-xl shadow-sm cursor-pointer hover:scale-[1.02] hover:shadow-lg"
-          >
-            <h2 className="mb-2 text-xl font-semibold text-card-foreground">
-              {book.name}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Balance:</span>
-              <span
-                className={`ml-2 font-bold ${
-                  (book.balance ?? 0) >= 0 ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                ${(book.balance ?? 0).toLocaleString()}
-              </span>
-            </p>
-            <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
-              <p>
-                <span className="font-medium text-foreground">Income:</span>
-                <span className="ml-1 text-green-500">
-                  ${(book.income ?? 0).toLocaleString()}
-                </span>
-              </p>
-              <p>
-                <span className="font-medium text-foreground">Expenses:</span>
-                <span className="ml-1 text-red-500">
-                  ${(book.expenses ?? 0).toLocaleString()}
-                </span>
-              </p>
+    <>
+      <div className="flex-1 space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h1 className="text-2xl md:text-3xl font-bold">Your Cash Books</h1>
+          <Button onClick={onOpenModal}>
+            Create New Book
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {books.map((book) => (
+            <div
+              key={book.id}
+              onClick={() => onSelectBook(book)}
+              className="p-6 transition-transform transform bg-card rounded-xl shadow-sm cursor-pointer hover:scale-[1.02] hover:shadow-lg flex flex-col justify-between"
+            >
+              <div>
+                <h2 className="mb-2 text-xl font-semibold text-card-foreground">
+                  {book.name}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">Balance:</span>
+                  <span
+                    className={`ml-2 font-bold ${
+                      (book.balance ?? 0) >= 0 ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    ${(book.balance ?? 0).toLocaleString()}
+                  </span>
+                </p>
+                <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+                  <p>
+                    <span className="font-medium text-foreground">Income:</span>
+                    <span className="ml-1 text-green-500">
+                      ${(book.income ?? 0).toLocaleString()}
+                    </span>
+                  </p>
+                  <p>
+                    <span className="font-medium text-foreground">Expenses:</span>
+                    <span className="ml-1 text-red-500">
+                      ${(book.expenses ?? 0).toLocaleString()}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t flex justify-end">
+                {book.ownerId === currentUserId && (
+                  <Button variant="ghost" size="sm" onClick={(e) => handleOpenCollaborators(e, book)}>
+                    <Users className="w-4 h-4 mr-2" />
+                    Collaborators
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
+      {collaboratorsModalBook && (
+        <ManageCollaboratorsDialog 
+          book={collaboratorsModalBook}
+          isOpen={!!collaboratorsModalBook}
+          onClose={() => setCollaboratorsModalBook(null)}
+        />
+      )}
+    </>
   );
 };
 
@@ -208,12 +238,13 @@ export default function DashboardPage() {
   const fetchBooks = useCallback(async () => {
     if (user) {
       setIsLoading(true);
-      const userBooks = await getBooks(user.uid);
+      const userBooks = await getBooks(user.uid, user.email || "");
       const sortedBooks = userBooks.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
       setBooks(
         sortedBooks.map((b: any) => ({
           id: b.id,
           name: b.name ?? "Untitled",
+          ownerId: b.ownerId,
           balance: b.balance ?? 0,
           expenses: b.expenses ?? 0,
           income: b.income ?? 0,
@@ -231,7 +262,6 @@ export default function DashboardPage() {
   const handleRefreshData = useCallback(async () => {
     await fetchBooks();
     if (selectedBook) {
-      // Find the updated book from the refreshed list
       const updatedBook = books.find(b => b.id === selectedBook.id);
       if (updatedBook) {
         setSelectedBook(updatedBook);
@@ -242,9 +272,8 @@ export default function DashboardPage() {
   const handleCreateBook = async (bookName: string) => {
     if (!user) return;
     setIsLoading(true);
-    await createBook({ name: bookName, userId: user.uid });
+    await createBook({ name: bookName, ownerId: user.uid });
     setIsNewBookModalOpen(false);
-    // Refresh books
     await fetchBooks();
     setIsLoading(false);
   };
@@ -274,7 +303,6 @@ export default function DashboardPage() {
 
   return (
     <>
-      {/* Content based on selected view */}
       {selectedBook ? (
         <CashBook book={selectedBook} onBack={() => setSelectedBook(null)} onTransactionAdded={handleRefreshData}/>
       ) : (
@@ -282,6 +310,7 @@ export default function DashboardPage() {
           onSelectBook={handleSelectBook}
           onOpenModal={() => setIsNewBookModalOpen(true)}
           books={books}
+          currentUserId={user?.uid}
         />
       )}
       <NewBookModal

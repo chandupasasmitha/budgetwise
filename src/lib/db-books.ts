@@ -1,26 +1,32 @@
 import { db } from "@/lib/firebase";
-import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, arrayUnion } from "firebase/firestore";
 import type { Transaction } from "./types";
 
-export async function createBook({ name, userId }: { name: string; userId: string }) {
+export async function createBook({ name, ownerId }: { name: string; ownerId: string }) {
   const docRef = await addDoc(collection(db, "books"), {
     name,
-    userId,
+    ownerId: ownerId,
+    collaborators: [],
     createdAt: Timestamp.now(),
   });
   return docRef.id;
 }
 
-export async function getBooks(userId: string) {
-  const booksQuery = query(collection(db, "books"), where("userId", "==", userId));
-  const transactionsQuery = query(collection(db, "transactions"), where("userId", "==", userId));
+export async function getBooks(userId: string, userEmail: string) {
+  const ownedBooksQuery = query(collection(db, "books"), where("ownerId", "==", userId));
+  const sharedBooksQuery = query(collection(db, "books"), where("collaborators", "array-contains", { email: userEmail, status: 'accepted' }));
   
-  const [booksSnapshot, transactionsSnapshot] = await Promise.all([
-    getDocs(booksQuery),
-    getDocs(transactionsQuery),
+  const [ownedBooksSnapshot, sharedBooksSnapshot, transactionsSnapshot] = await Promise.all([
+    getDocs(ownedBooksQuery),
+    getDocs(sharedBooksQuery),
+    getDocs(query(collection(db, "transactions"), where("userId", "==", userId)))
   ]);
 
-  const books = booksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const allBooksMap = new Map();
+  ownedBooksSnapshot.docs.forEach(doc => allBooksMap.set(doc.id, { id: doc.id, ...doc.data() }));
+  sharedBooksSnapshot.docs.forEach(doc => allBooksMap.set(doc.id, { id: doc.id, ...doc.data() }));
+
+  const books = Array.from(allBooksMap.values());
   const transactions = transactionsSnapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -84,4 +90,21 @@ export async function addPaymentMethod({ name, userId }: { name: string; userId:
         createdAt: Timestamp.now(),
     });
     return docRef.id;
+}
+
+export async function addCollaborator(bookId: string, email: string, role: 'Viewer' | 'Editor') {
+  const bookRef = doc(db, "books", bookId);
+  await updateDoc(bookRef, {
+    collaborators: arrayUnion({
+      email,
+      role,
+      status: 'pending' // In a real app, this would be 'pending' until the user accepts
+    })
+  });
+}
+
+export async function getCollaborators(bookId: string) {
+  // In a real scenario, you might want to fetch more details, but for now this is fine.
+  // This is a placeholder as the collaborators are part of the book document itself.
+  return []; 
 }
