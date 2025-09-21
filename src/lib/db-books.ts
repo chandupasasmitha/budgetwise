@@ -1,3 +1,4 @@
+
 import { db } from "@/lib/firebase";
 import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, arrayUnion, getDoc } from "firebase/firestore";
 import type { Transaction } from "./types";
@@ -21,7 +22,7 @@ export async function getBooks(userId: string, userEmail: string) {
   const [ownedBooksSnapshot, sharedBooksSnapshot, sharedBooksEditorSnapshot] = await Promise.all([
     getDocs(ownedBooksQuery),
     getDocs(sharedBooksQuery),
-    getDocs(sharedBooksEditorSnapshot),
+    getDocs(sharedBooksQueryEditor),
   ]);
 
   const allBooksMap = new Map();
