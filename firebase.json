@@ -1,6 +1,0 @@
-
-{
-  "apphosting": {
-    "backends": ["budgetwise-backend"]
-  }
-}
