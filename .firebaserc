@@ -1,5 +1,6 @@
+
 {
   "projects": {
-    "default": "budgetwise-41m86"
+    "default": "<your-firebase-project-id>"
   }
 }
