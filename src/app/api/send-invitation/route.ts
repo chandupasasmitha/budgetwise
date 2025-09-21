@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const invitationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite?bookId=${bookId}&email=${email}`;
 
     const data = await resend.emails.send({
-      from: "BudgetWise <noreply@yourdomain.com>",
+      from: "BudgetWise <onboarding@resend.dev>",
       to: email,
       subject: `Invitation to collaborate on "${bookName}"`,
       html: `
