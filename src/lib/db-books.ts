@@ -106,14 +106,29 @@ export async function addPaymentMethod({ name, userId }: { name: string; userId:
 
 export async function addCollaborator(bookId: string, email: string, role: 'Viewer' | 'Editor') {
   const bookRef = doc(db, "books", bookId);
-  // NOTE: In a real app, status would be 'pending' and an email would be sent.
-  // For this project, we'll set it to 'accepted' to simulate the invitation flow.
+  // Set the collaborator's status to 'pending'
   await updateDoc(bookRef, {
     collaborators: arrayUnion({
       email,
       role,
-      status: 'accepted' 
+      status: 'pending' 
     })
+  });
+
+  // Create a document in the `mail` collection to trigger the email extension
+  const acceptUrl = `${window.location.origin}/dashboard`; // In a real app, you'd build a specific accept page
+  await addDoc(collection(db, "mail"), {
+    to: [email],
+    message: {
+      subject: "You've been invited to a Cash Book on BudgetWise!",
+      html: `
+        <h1>You're Invited!</h1>
+        <p>You have been invited to collaborate on a cash book with the role: <strong>${role}</strong>.</p>
+        <p>Click the link below to view the dashboard and see the shared book once you log in.</p>
+        <a href="${acceptUrl}">Go to Dashboard</a>
+        <p>If you don't have an account, you can sign up with this email address.</p>
+      `,
+    }
   });
 }
 
