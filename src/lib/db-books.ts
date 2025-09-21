@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase";
-import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, arrayUnion } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, arrayUnion, getDoc } from "firebase/firestore";
 import type { Transaction } from "./types";
 
 export async function createBook({ name, ownerId }: { name: string; ownerId: string }) {
@@ -14,16 +14,21 @@ export async function createBook({ name, ownerId }: { name: string; ownerId: str
 
 export async function getBooks(userId: string, userEmail: string) {
   const ownedBooksQuery = query(collection(db, "books"), where("ownerId", "==", userId));
-  const sharedBooksQuery = query(collection(db, "books"), where("collaborators", "array-contains", { email: userEmail, status: 'accepted' }));
+  const sharedBooksQuery = query(collection(db, "books"), where("collaborators", "array-contains", { email: userEmail, status: 'accepted', role: 'Viewer' }));
+  const sharedBooksQueryEditor = query(collection(db, "books"), where("collaborators", "array-contains", { email: userEmail, status: 'accepted', role: 'Editor' }));
+
   
-  const [ownedBooksSnapshot, sharedBooksSnapshot] = await Promise.all([
+  const [ownedBooksSnapshot, sharedBooksSnapshot, sharedBooksEditorSnapshot] = await Promise.all([
     getDocs(ownedBooksQuery),
     getDocs(sharedBooksQuery),
+    getDocs(sharedBooksEditorSnapshot),
   ]);
 
   const allBooksMap = new Map();
   ownedBooksSnapshot.docs.forEach(doc => allBooksMap.set(doc.id, { id: doc.id, ...doc.data() }));
   sharedBooksSnapshot.docs.forEach(doc => allBooksMap.set(doc.id, { id: doc.id, ...doc.data() }));
+  sharedBooksEditorSnapshot.docs.forEach(doc => allBooksMap.set(doc.id, { id: doc.id, ...doc.data() }));
+
 
   const booksData = Array.from(allBooksMap.values());
   
@@ -31,8 +36,8 @@ export async function getBooks(userId: string, userEmail: string) {
 
   const bookIds = booksData.map(b => b.id);
 
-  // Fetch all transactions for the relevant books in a single query if possible
   // Firestore's 'in' operator is limited to 30 items. If more books, multiple queries would be needed.
+  if (bookIds.length === 0) return [];
   const transactionsQuery = query(collection(db, "transactions"), where("bookId", "in", bookIds));
   const transactionsSnapshot = await getDocs(transactionsQuery);
 
@@ -110,10 +115,40 @@ export async function addCollaborator(bookId: string, email: string, role: 'View
     collaborators: arrayUnion({
       email,
       role,
-      status: 'accepted' // Simulating acceptance for now
+      status: 'pending'
     })
   });
 }
+
+export async function acceptInvitation(bookId: string, email: string): Promise<boolean> {
+  const bookRef = doc(db, "books", bookId);
+  const bookSnap = await getDoc(bookRef);
+
+  if (!bookSnap.exists()) {
+    console.error("Book not found");
+    return false;
+  }
+
+  const bookData = bookSnap.data();
+  const collaborators = bookData.collaborators || [];
+  
+  let collaboratorFound = false;
+  const updatedCollaborators = collaborators.map((c: any) => {
+    if (c.email === email && c.status === 'pending') {
+      collaboratorFound = true;
+      return { ...c, status: 'accepted' };
+    }
+    return c;
+  });
+
+  if (collaboratorFound) {
+    await updateDoc(bookRef, { collaborators: updatedCollaborators });
+    return true;
+  }
+
+  return false;
+}
+
 
 export async function getCollaborators(bookId: string) {
   // In a real scenario, you might want to fetch more details, but for now this is fine.

@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { addCollaborator } from "@/lib/db-books";
+import { useAuth } from "@/hooks/use-auth";
 
 interface ManageCollaboratorsDialogProps {
   book: { id: string; name: string };
@@ -26,6 +27,7 @@ interface ManageCollaboratorsDialogProps {
 export default function ManageCollaboratorsDialog({ book, isOpen, onClose }: ManageCollaboratorsDialogProps) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"Viewer" | "Editor">("Viewer");
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const handleInvite = async () => {
@@ -38,13 +40,27 @@ export default function ManageCollaboratorsDialog({ book, isOpen, onClose }: Man
       return;
     }
     try {
+      // 1. Add collaborator to Firestore with 'pending' status
       await addCollaborator(book.id, email, role);
+
+      // 2. Call the API route to send the invitation email
+      await fetch("/api/send-invitation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email,
+          bookId: book.id,
+          bookName: book.name,
+          ownerName: user?.displayName || user?.email || "Someone",
+        }),
+      });
+
       toast({
         title: "Invitation Sent",
         description: `${email} has been invited to ${book.name}.`,
       });
       setEmail("");
-      // In a real app, you would also refresh the list of collaborators here.
+      onClose();
     } catch (error) {
       toast({
         variant: "destructive",
