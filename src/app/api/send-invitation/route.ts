@@ -1,9 +1,9 @@
 import { Resend } from "resend";
 
 export async function POST(req: Request) {
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  
   try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    
     const body = await req.json();
     const { email, bookId, bookName, ownerName } = body;
 
@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const invitationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite?bookId=${bookId}&email=${email}`;
 
     const data = await resend.emails.send({
-      from: "noreply@yourdomain.com",
+      from: "BudgetWise <noreply@chandupasasmitha.me>",
       to: email,
       subject: `Invitation to collaborate on "${bookName}"`,
       html: `
