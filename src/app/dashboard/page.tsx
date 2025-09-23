@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
@@ -205,19 +206,18 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
       setLoading(true);
       const transactionsData = await getTransactionsForBook(book.id);
       
-      let filteredTransactions = transactionsData;
-      if (book.currentUserRole === 'Add Transactions Only' && user) {
-        filteredTransactions = transactionsData.filter(t => t.userId === user.uid);
-      }
-      
-      const sortedTransactions = filteredTransactions.sort((a, b) => b.date.getTime() - a.date.getTime());
+      const sortedTransactions = transactionsData.sort((a, b) => b.date.getTime() - a.date.getTime());
       setTransactions(sortedTransactions);
       setLoading(false);
     }
     fetchTransactions();
   }, [book, user, book.currentUserRole]);
 
-  const recentTransactions = transactions.slice(0, 10);
+  let recentTransactions = transactions.slice(0, 10);
+  if (book.currentUserRole === 'Add Transactions Only' && user) {
+    recentTransactions = transactions.filter(t => t.userId === user.uid).slice(0, 10);
+  }
+
   const expenses = transactions.filter(t => t.type === 'expense');
 
   return (
