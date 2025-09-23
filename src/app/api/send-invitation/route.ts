@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     // Construct the invitation URL
     const invitationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite?bookId=${bookId}&email=${email}`;
 
-    const data = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: "BudgetWise <noreply@chandupasasmitha.me>",
       to: email,
       subject: `Invitation to collaborate on "${bookName}"`,
@@ -25,9 +25,14 @@ export async function POST(req: Request) {
       `,
     });
 
+    if (error) {
+      console.error("Resend API Error:", JSON.stringify(error, null, 2));
+      return Response.json({ success: false, error: error.message }, { status: 500 });
+    }
+
     return Response.json({ success: true, data });
   } catch (error: any) {
-    console.error("Resend error:", error);
+    console.error("General Error in send-invitation route:", error);
     return Response.json({ success: false, error: error.message }, { status: 500 });
   }
 }
