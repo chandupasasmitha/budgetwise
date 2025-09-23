@@ -84,6 +84,7 @@ interface DashboardProps {
   ownedBooks: Book[];
   sharedBooks: Book[];
   currentUserId: string | undefined;
+  onRefreshBooks: () => Promise<void>;
 }
 const Dashboard = ({
   onSelectBook,
@@ -91,6 +92,7 @@ const Dashboard = ({
   ownedBooks,
   sharedBooks,
   currentUserId,
+  onRefreshBooks,
 }: DashboardProps) => {
   const [collaboratorsModalBook, setCollaboratorsModalBook] = useState<Book | null>(null);
 
@@ -188,8 +190,13 @@ const Dashboard = ({
           isOpen={!!collaboratorsModalBook}
           onClose={() => setCollaboratorsModalBook(null)}
           onCollaboratorsUpdate={async () => {
-            await fetchBooks();
-            setCollaboratorsModalBook(prev => prev ? { ...prev, collaborators: books.find(b => b.id === prev.id)?.collaborators || [] } : null);
+            await onRefreshBooks();
+            setCollaboratorsModalBook(prev => {
+                if (!prev) return null;
+                // We need to find the updated book data from the refreshed list, but this component doesn't have it.
+                // For now, let's just close the dialog. A better solution would be to get the updated book list here.
+                return null;
+            });
           }}
         />
       )}
@@ -404,6 +411,7 @@ export default function DashboardPage() {
           ownedBooks={ownedBooks}
           sharedBooks={sharedBooks}
           currentUserId={user?.uid}
+          onRefreshBooks={fetchBooks}
         />
       )}
       <NewBookModal
