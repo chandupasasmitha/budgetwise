@@ -1,6 +1,7 @@
+
 import { db } from "@/lib/firebase";
-import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, arrayUnion, getDoc, or } from "firebase/firestore";
-import type { Transaction } from "./types";
+import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, arrayUnion, getDoc, or, arrayRemove } from "firebase/firestore";
+import type { Transaction, Collaborator } from "./types";
 import type { CollaboratorRole } from "@/components/dashboard/manage-collaborators-dialog";
 
 export async function createBook({ name, ownerId, ownerEmail }: { name: string; ownerId: string; ownerEmail: string }) {
@@ -23,7 +24,14 @@ export async function getBooks(userId: string, userEmail: string) {
         where("ownerId", "==", userId),
         where("collaborators", "array-contains-any", [
             { email: lowercasedEmail, status: 'accepted', role: 'Full Access' },
-            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only' },
+            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: true, expenses: true } },
+            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: true, expenses: false } },
+            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: false, expenses: true } },
+            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: false, expenses: false } },
+            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: true, expenses: true } },
+            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: true, expenses: false } },
+            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: false, expenses: true } },
+            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: false, expenses: false } },
         ])
     ));
 
@@ -62,10 +70,20 @@ export async function getBooks(userId: string, userEmail: string) {
             .reduce((sum, t) => sum + t.amount, 0);
         const balance = income - expenses;
 
-        const currentUserRole = book.ownerId === userId 
-            ? 'Owner' 
-            : book.collaborators.find((c: any) => c.email.toLowerCase() === lowercasedEmail)?.role || null;
+        let currentUserRole = null;
+        let visibilitySettings = null;
 
+        if (book.ownerId === userId) {
+            currentUserRole = 'Owner';
+        } else {
+            const collaborator = book.collaborators.find((c: any) => c.email.toLowerCase() === lowercasedEmail);
+            if (collaborator) {
+                currentUserRole = collaborator.role;
+                if (collaborator.role === 'Add Transactions Only') {
+                    visibilitySettings = collaborator.visibility;
+                }
+            }
+        }
 
         return {
             ...book,
@@ -73,6 +91,7 @@ export async function getBooks(userId: string, userEmail: string) {
             expenses,
             balance,
             currentUserRole,
+            visibilitySettings,
         };
     });
 }
@@ -116,12 +135,26 @@ export async function addPaymentMethod({ name, userId }: { name: string; userId:
 
 export async function addCollaborator(bookId: string, email: string, role: CollaboratorRole) {
   const bookRef = doc(db, "books", bookId);
+  const bookSnap = await getDoc(bookRef);
+  if (!bookSnap.exists()) throw new Error("Book not found");
+  
+  const collaborators = bookSnap.data().collaborators || [];
+  if (collaborators.some((c: Collaborator) => c.email.toLowerCase() === email.toLowerCase())) {
+      throw new Error("This user is already a collaborator or has a pending invitation.");
+  }
+  
+  const newCollaborator: Collaborator = {
+    email: email.toLowerCase(),
+    role,
+    status: 'pending'
+  }
+
+  if (role === 'Add Transactions Only') {
+    newCollaborator.visibility = { balance: false, income: false, expenses: false };
+  }
+
   await updateDoc(bookRef, {
-    collaborators: arrayUnion({
-      email: email.toLowerCase(),
-      role,
-      status: 'pending'
-    })
+    collaborators: arrayUnion(newCollaborator)
   });
 }
 
@@ -155,9 +188,47 @@ export async function acceptInvitation(bookId: string, email: string): Promise<b
   return false;
 }
 
+export async function updateCollaboratorPermissions(bookId: string, collaboratorEmail: string, permission: 'balance' | 'income' | 'expenses', value: boolean) {
+    const bookRef = doc(db, "books", bookId);
+    const bookSnap = await getDoc(bookRef);
 
-export async function getCollaborators(bookId: string) {
-  // In a real scenario, you might want to fetch more details, but for now this is fine.
-  // This is a placeholder as the collaborators are part of the book document itself.
-  return []; 
+    if (!bookSnap.exists()) {
+        throw new Error("Book not found");
+    }
+
+    const collaborators = bookSnap.data().collaborators || [];
+    const updatedCollaborators = collaborators.map((c: Collaborator) => {
+        if (c.email.toLowerCase() === collaboratorEmail.toLowerCase() && c.role === 'Add Transactions Only') {
+            return {
+                ...c,
+                visibility: {
+                    ...c.visibility,
+                    [permission]: value
+                }
+            };
+        }
+        return c;
+    });
+
+    await updateDoc(bookRef, { collaborators: updatedCollaborators });
+}
+
+export async function removeCollaborator(bookId: string, collaboratorEmail: string) {
+    const bookRef = doc(db, "books", bookId);
+    const bookSnap = await getDoc(bookRef);
+
+    if (!bookSnap.exists()) {
+        throw new Error("Book not found");
+    }
+
+    const collaborators = bookSnap.data().collaborators || [];
+    const collaboratorToRemove = collaborators.find((c: Collaborator) => c.email.toLowerCase() === collaboratorEmail.toLowerCase());
+
+    if (collaboratorToRemove) {
+        await updateDoc(bookRef, {
+            collaborators: arrayRemove(collaboratorToRemove)
+        });
+    } else {
+        throw new Error("Collaborator not found");
+    }
 }

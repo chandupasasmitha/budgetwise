@@ -12,7 +12,7 @@ import {
   getTransactionsForBook,
 } from "@/lib/db-books";
 import { useAuth } from "@/hooks/use-auth";
-import type { Transaction } from "@/lib/types";
+import type { Collaborator, Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -32,6 +32,12 @@ interface Book {
   income?: number;
   createdAt: any;
   currentUserRole?: 'Owner' | 'Full Access' | 'Add Transactions Only';
+  collaborators: Collaborator[];
+  visibilitySettings?: {
+    balance: boolean;
+    income: boolean;
+    expenses: boolean;
+  }
 }
 
 // Modal component for creating a new book
@@ -181,6 +187,10 @@ const Dashboard = ({
           book={collaboratorsModalBook}
           isOpen={!!collaboratorsModalBook}
           onClose={() => setCollaboratorsModalBook(null)}
+          onCollaboratorsUpdate={async () => {
+            await fetchBooks();
+            setCollaboratorsModalBook(prev => prev ? { ...prev, collaborators: books.find(b => b.id === prev.id)?.collaborators || [] } : null);
+          }}
         />
       )}
     </>
@@ -198,6 +208,7 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   
+  const isOwner = book.ownerId === user?.uid;
   const canViewDetails = book.currentUserRole === 'Owner' || book.currentUserRole === 'Full Access';
 
   useEffect(() => {
@@ -218,6 +229,10 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
     : transactions.filter(t => t.userId === user.uid);
 
   const expenses = transactions.filter(t => t.type === 'expense');
+  
+  const showBalance = isOwner || book.currentUserRole === 'Full Access' || (book.currentUserRole === 'Add Transactions Only' && book.visibilitySettings?.balance);
+  const showIncome = isOwner || book.currentUserRole === 'Full Access' || (book.currentUserRole === 'Add Transactions Only' && book.visibilitySettings?.income);
+  const showExpenses = isOwner || book.currentUserRole === 'Full Access' || (book.currentUserRole === 'Add Transactions Only' && book.visibilitySettings?.expenses);
 
   return (
     <div className="flex-1 space-y-6">
@@ -232,7 +247,7 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <h1 className="text-2xl md:text-3xl font-bold">{book.name}</h1>
-        {canViewDetails && (
+        {showBalance && (
             <div className="text-lg sm:text-2xl font-bold">
                 Balance:{" "}
                 <span
@@ -246,11 +261,16 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
         )}
       </div>
 
-      {canViewDetails && (
+      {(canViewDetails || showIncome || showExpenses) && (
         <>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <OverviewCards transactions={transactions} />
+                <OverviewCards 
+                  transactions={transactions} 
+                  showIncome={showIncome}
+                  showExpenses={showExpenses}
+                />
             </div>
+          {canViewDetails && (
             <div className="grid gap-4 xl:grid-cols-3">
                 <div className="grid auto-rows-max items-start gap-4 xl:col-span-3">
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -265,6 +285,7 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
                 </div>
                 </div>
             </div>
+          )}
         </>
       )}
       
@@ -298,6 +319,8 @@ export default function DashboardPage() {
           income: b.income ?? 0,
           createdAt: b.createdAt,
           currentUserRole: b.currentUserRole,
+          collaborators: b.collaborators || [],
+          visibilitySettings: b.visibilitySettings,
         }))
       );
       setIsLoading(false);
@@ -325,6 +348,8 @@ export default function DashboardPage() {
                     income: updatedSelectedBook.income ?? 0,
                     createdAt: updatedSelectedBook.createdAt,
                     currentUserRole: (updatedSelectedBook as any).currentUserRole,
+                    collaborators: (updatedSelectedBook as any).collaborators || [],
+                    visibilitySettings: (updatedSelectedBook as any).visibilitySettings,
                  });
             } else {
                 setSelectedBook(null);

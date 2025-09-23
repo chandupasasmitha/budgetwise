@@ -14,19 +14,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { addCollaborator } from "@/lib/db-books";
+import { addCollaborator, updateCollaboratorPermissions, removeCollaborator } from "@/lib/db-books";
 import { useAuth } from "@/hooks/use-auth";
+import type { Collaborator } from "@/lib/types";
+import { X } from "lucide-react";
 
 interface ManageCollaboratorsDialogProps {
-  book: { id: string; name: string };
+  book: { id: string; name: string, collaborators: Collaborator[] };
   isOpen: boolean;
   onClose: () => void;
+  onCollaboratorsUpdate: () => void;
 }
 
 export type CollaboratorRole = "Full Access" | "Add Transactions Only";
 
-export default function ManageCollaboratorsDialog({ book, isOpen, onClose }: ManageCollaboratorsDialogProps) {
+export default function ManageCollaboratorsDialog({ book, isOpen, onClose, onCollaboratorsUpdate }: ManageCollaboratorsDialogProps) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<CollaboratorRole>("Add Transactions Only");
   const { user } = useAuth();
@@ -42,10 +47,8 @@ export default function ManageCollaboratorsDialog({ book, isOpen, onClose }: Man
       return;
     }
     try {
-      // 1. Add collaborator to Firestore with 'pending' status
       await addCollaborator(book.id, email, role);
 
-      // 2. Call the API route to send the invitation email
       await fetch("/api/send-invitation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -62,25 +65,60 @@ export default function ManageCollaboratorsDialog({ book, isOpen, onClose }: Man
         description: `${email} has been invited to ${book.name}.`,
       });
       setEmail("");
-      onClose();
-    } catch (error) {
+      onCollaboratorsUpdate();
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to send invitation.",
+        description: error.message || "Failed to send invitation.",
       });
     }
   };
 
+  const handlePermissionChange = async (collaboratorEmail: string, permission: 'balance' | 'income' | 'expenses', value: boolean) => {
+    try {
+      await updateCollaboratorPermissions(book.id, collaboratorEmail, permission, value);
+      onCollaboratorsUpdate();
+      toast({
+        title: "Permissions Updated",
+        description: `Visibility settings for ${collaboratorEmail} have been updated.`
+      });
+    } catch (error) {
+       toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update permissions.",
+      });
+    }
+  }
+
+  const handleRemoveCollaborator = async (collaboratorEmail: string) => {
+      try {
+          await removeCollaborator(book.id, collaboratorEmail);
+          onCollaboratorsUpdate();
+          toast({
+              title: "Collaborator Removed",
+              description: `${collaboratorEmail} has been removed from the cash book.`
+          });
+      } catch (error) {
+           toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to remove collaborator.",
+          });
+      }
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Manage Collaborators for {book.name}</DialogTitle>
+          <DialogTitle>Manage Collaborators</DialogTitle>
           <DialogDescription>
-            Invite others to view or edit this cash book.
+            Invite new members and manage permissions for {`"${book.name}"`}.
           </DialogDescription>
         </DialogHeader>
+
         <div className="py-4 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email address</Label>
@@ -104,12 +142,56 @@ export default function ManageCollaboratorsDialog({ book, isOpen, onClose }: Man
               </SelectContent>
             </Select>
           </div>
+          <Button onClick={handleInvite} className="w-full">Send Invitation</Button>
         </div>
+
+        {book.collaborators && book.collaborators.length > 0 && (
+            <>
+                <Separator />
+                <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground">Existing Collaborators</h3>
+                    <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
+                        {book.collaborators.map(c => (
+                            <div key={c.email} className="p-3 border rounded-md">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="font-semibold">{c.email}</p>
+                                        <p className="text-sm text-muted-foreground">{c.role} ({c.status})</p>
+                                    </div>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveCollaborator(c.email)}>
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                {c.role === 'Add Transactions Only' && (
+                                    <div className="mt-3 pt-3 border-t">
+                                        <h4 className="text-xs font-medium text-muted-foreground mb-2">Visibility Settings</h4>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <Label htmlFor={`balance-${c.email}`} className="text-sm font-normal">View Total Balance</Label>
+                                                <Switch id={`balance-${c.email}`} checked={c.visibility?.balance} onCheckedChange={(val) => handlePermissionChange(c.email, 'balance', val)} />
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <Label htmlFor={`income-${c.email}`} className="text-sm font-normal">View Total Income</Label>
+                                                <Switch id={`income-${c.email}`} checked={c.visibility?.income} onCheckedChange={(val) => handlePermissionChange(c.email, 'income', val)} />
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <Label htmlFor={`expenses-${c.email}`} className="text-sm font-normal">View Total Expenses</Label>
+                                                <Switch id={`expenses-${c.email}`} checked={c.visibility?.expenses} onCheckedChange={(val) => handlePermissionChange(c.email, 'expenses', val)} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </>
+        )}
+        
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Close
+            Done
           </Button>
-          <Button onClick={handleInvite}>Send Invitation</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
