@@ -7,20 +7,39 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/hooks/use-auth";
 
 function InvitationContent() {
+  const { user, loading: authLoading } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("Validating your invitation...");
 
   useEffect(() => {
+    if (authLoading) return; // Wait for authentication state to be resolved
+
     const bookId = searchParams.get("bookId");
     const email = searchParams.get("email");
 
     if (!bookId || !email) {
       setStatus("error");
       setMessage("Invalid invitation link. Please check the URL and try again.");
+      return;
+    }
+
+    // If user is not logged in, redirect them to sign up
+    if (!user) {
+      // Store invitation details in session storage to retrieve after signup/login
+      sessionStorage.setItem('pendingInvitation', JSON.stringify({ bookId, email }));
+      router.push(`/signup?email=${encodeURIComponent(email)}&redirect=/invite`);
+      return;
+    }
+
+    // If user is logged in, but with the wrong email
+    if (user.email !== email) {
+      setStatus("error");
+      setMessage(`This invitation is for ${email}. You are logged in as ${user.email}. Please log out and use the correct account.`);
       return;
     }
 
@@ -43,7 +62,7 @@ function InvitationContent() {
     };
 
     handleAccept();
-  }, [searchParams, router]);
+  }, [searchParams, router, user, authLoading]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">

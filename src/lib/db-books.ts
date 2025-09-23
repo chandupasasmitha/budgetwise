@@ -1,12 +1,12 @@
-
 import { db } from "@/lib/firebase";
-import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, arrayUnion, getDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, arrayUnion, getDoc, or } from "firebase/firestore";
 import type { Transaction } from "./types";
 
-export async function createBook({ name, ownerId }: { name: string; ownerId: string }) {
+export async function createBook({ name, ownerId, ownerEmail }: { name: string; ownerId: string; ownerEmail: string }) {
   const docRef = await addDoc(collection(db, "books"), {
     name,
-    ownerId: ownerId,
+    ownerId,
+    ownerEmail,
     collaborators: [],
     createdAt: Timestamp.now(),
   });
@@ -14,64 +14,66 @@ export async function createBook({ name, ownerId }: { name: string; ownerId: str
 }
 
 export async function getBooks(userId: string, userEmail: string) {
-  const ownedBooksQuery = query(collection(db, "books"), where("ownerId", "==", userId));
-  const sharedBooksQuery = query(collection(db, "books"), where("collaborators", "array-contains", { email: userEmail, status: 'accepted', role: 'Viewer' }));
-  const sharedBooksQueryEditor = query(collection(db, "books"), where("collaborators", "array-contains", { email: userEmail, status: 'accepted', role: 'Editor' }));
+    if (!userEmail) return [];
 
-  
-  const [ownedBooksSnapshot, sharedBooksSnapshot, sharedBooksEditorSnapshot] = await Promise.all([
-    getDocs(ownedBooksQuery),
-    getDocs(sharedBooksQuery),
-    getDocs(sharedBooksQueryEditor),
-  ]);
+    const ownedBooksQuery = query(collection(db, "books"), where("ownerId", "==", userId));
+    const sharedBooksQuery = query(collection(db, "books"), where("collaborators", "array-contains-any", [
+        { email: userEmail, status: 'accepted', role: 'Viewer' },
+        { email: userEmail, status: 'accepted', role: 'Editor' },
+    ]));
+    
+    const combinedQuery = query(collection(db, "books"), or(
+        where("ownerId", "==", userId),
+        where("collaborators", "array-contains-any", [
+            { email: userEmail, status: 'accepted', role: 'Viewer' },
+            { email: userEmail, status: 'accepted', role: 'Editor' },
+        ])
+    ));
 
-  const allBooksMap = new Map();
-  ownedBooksSnapshot.docs.forEach(doc => allBooksMap.set(doc.id, { id: doc.id, ...doc.data() }));
-  sharedBooksSnapshot.docs.forEach(doc => allBooksMap.set(doc.id, { id: doc.id, ...doc.data() }));
-  sharedBooksEditorSnapshot.docs.forEach(doc => allBooksMap.set(doc.id, { id: doc.id, ...doc.data() }));
+    const querySnapshot = await getDocs(combinedQuery);
+    
+    const booksData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
+    if (booksData.length === 0) return [];
 
-  const booksData = Array.from(allBooksMap.values());
-  
-  if (booksData.length === 0) return [];
+    const bookIds = booksData.map(b => b.id);
+    if (bookIds.length === 0) return [];
+    
+    // Firestore's 'in' operator is limited to 30 items. 
+    // If a user has more books, this part needs chunking into multiple queries.
+    const transactionsQuery = query(collection(db, "transactions"), where("bookId", "in", bookIds));
+    const transactionsSnapshot = await getDocs(transactionsQuery);
 
-  const bookIds = booksData.map(b => b.id);
+    const transactionsByBook = new Map<string, any[]>();
+    transactionsSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const bookId = data.bookId;
+        if (!transactionsByBook.has(bookId)) {
+            transactionsByBook.set(bookId, []);
+        }
+        transactionsByBook.get(bookId)!.push({
+            id: doc.id,
+            ...data,
+        });
+    });
 
-  // Firestore's 'in' operator is limited to 30 items. If more books, multiple queries would be needed.
-  if (bookIds.length === 0) return [];
-  const transactionsQuery = query(collection(db, "transactions"), where("bookId", "in", bookIds));
-  const transactionsSnapshot = await getDocs(transactionsQuery);
+    return booksData.map(book => {
+        const bookTransactions = transactionsByBook.get(book.id) || [];
+        const income = bookTransactions
+            .filter(t => t.type === 'income')
+            .reduce((sum, t) => sum + t.amount, 0);
+        const expenses = bookTransactions
+            .filter(t => t.type === 'expense')
+            .reduce((sum, t) => sum + t.amount, 0);
+        const balance = income - expenses;
 
-  const transactionsByBook = new Map<string, any[]>();
-  transactionsSnapshot.docs.forEach(doc => {
-      const data = doc.data();
-      const bookId = data.bookId;
-      if (!transactionsByBook.has(bookId)) {
-          transactionsByBook.set(bookId, []);
-      }
-      transactionsByBook.get(bookId)!.push({
-        id: doc.id,
-        ...data,
-      });
-  });
-
-  return booksData.map(book => {
-    const bookTransactions = transactionsByBook.get(book.id) || [];
-    const income = bookTransactions
-      .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
-    const expenses = bookTransactions
-      .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
-    const balance = income - expenses;
-
-    return {
-      ...book,
-      income,
-      expenses,
-      balance,
-    };
-  });
+        return {
+            ...book,
+            income,
+            expenses,
+            balance,
+        };
+    });
 }
 
 export async function getTransactionsForBook(bookId: string): Promise<Transaction[]> {

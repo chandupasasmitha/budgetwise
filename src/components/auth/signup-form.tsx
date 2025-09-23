@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
@@ -17,25 +17,45 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { acceptInvitation } from '@/lib/db-books';
 
-export function SignupForm() {
+function SignupFormComponent() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  
+  useEffect(() => {
+    const emailFromQuery = searchParams.get('email');
+    if (emailFromQuery) {
+      setEmail(emailFromQuery);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      // You can also update the user's profile with the full name here if desired
       toast({
         title: "Account created",
         description: "You have been successfully signed up.",
       });
+
+      // After signup, check for and process a pending invitation
+      const pendingInvitation = sessionStorage.getItem('pendingInvitation');
+      if (pendingInvitation) {
+        const { bookId, email: inviteEmail } = JSON.parse(pendingInvitation);
+        if (inviteEmail === email) {
+            await acceptInvitation(bookId, inviteEmail);
+            toast({ title: "Invitation accepted!", description: "A shared cash book has been added to your account." });
+            sessionStorage.removeItem('pendingInvitation');
+        }
+      }
+
       router.push('/dashboard');
     } catch (error: any) {
       toast({
@@ -103,4 +123,13 @@ export function SignupForm() {
       </CardContent>
     </Card>
   );
+}
+
+
+export function SignupForm() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <SignupFormComponent />
+        </Suspense>
+    )
 }
