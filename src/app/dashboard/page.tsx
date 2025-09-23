@@ -211,12 +211,11 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
       setLoading(false);
     }
     fetchTransactions();
-  }, [book, user, book.currentUserRole]);
+  }, [book]);
 
-  let recentTransactions = transactions.slice(0, 10);
-  if (book.currentUserRole === 'Add Transactions Only' && user) {
-    recentTransactions = transactions.filter(t => t.userId === user.uid).slice(0, 10);
-  }
+  const displayedTransactions = canViewDetails || !user 
+    ? transactions
+    : transactions.filter(t => t.userId === user.uid);
 
   const expenses = transactions.filter(t => t.type === 'expense');
 
@@ -269,7 +268,7 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
         </>
       )}
       
-      <RecentTransactions transactions={recentTransactions} bookId={book.id} isLoading={loading} onTransactionAdded={onTransactionAdded} />
+      <RecentTransactions transactions={displayedTransactions} bookId={book.id} isLoading={loading} onTransactionAdded={onTransactionAdded} />
 
     </div>
   );
