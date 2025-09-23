@@ -2,13 +2,16 @@ import { Resend } from "resend";
 
 export async function POST(req: Request) {
   try {
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error("Resend API key is not configured.");
+    }
     const resend = new Resend(process.env.RESEND_API_KEY);
     
     const body = await req.json();
     const { email, bookId, bookName, ownerName } = body;
 
     // Construct the invitation URL
-    const invitationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite?bookId=${bookId}&email=${email}`;
+    const invitationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002'}/invite?bookId=${bookId}&email=${email}`;
 
     const { data, error } = await resend.emails.send({
       from: "BudgetWise <noreply@chandupasasmitha.me>",
