@@ -1,15 +1,7 @@
-import { Resend } from "resend";
-import { config } from 'dotenv';
-
-config(); // Load environment variables from .env file
+import { resend } from "@/lib/resend";
 
 export async function POST(req: Request) {
   try {
-    if (!process.env.RESEND_API_KEY) {
-      throw new Error("Resend API key is not configured.");
-    }
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    
     const body = await req.json();
     const { email, bookId, bookName, ownerName } = body;
 
