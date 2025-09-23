@@ -151,8 +151,8 @@ export default function ManageCollaboratorsDialog({ book, isOpen, onClose, onCol
                 <div className="space-y-4">
                     <h3 className="text-sm font-medium text-muted-foreground">Existing Collaborators</h3>
                     <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
-                        {book.collaborators.map(c => (
-                            <div key={c.email} className="p-3 border rounded-md">
+                        {book.collaborators.map((c, index) => (
+                            <div key={`${c.email}-${index}`} className="p-3 border rounded-md">
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="font-semibold">{c.email}</p>
