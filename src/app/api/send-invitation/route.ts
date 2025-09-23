@@ -1,6 +1,11 @@
 import { resend } from "@/lib/resend";
 
 export async function POST(req: Request) {
+  if (!resend) {
+    console.error("Resend is not configured. RESEND_API_KEY is missing.");
+    return Response.json({ success: false, error: "Email service is not configured." }, { status: 500 });
+  }
+
   try {
     const body = await req.json();
     const { email, bookId, bookName, ownerName } = body;

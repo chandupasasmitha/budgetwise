@@ -1,12 +1,10 @@
 import { Resend } from 'resend';
-import { config } from 'dotenv';
-import path from 'path';
-
-// Explicitly point to the .env file in the project root
-config({ path: path.resolve(process.cwd(), '.env') });
+import 'dotenv/config'
 
 if (!process.env.RESEND_API_KEY) {
-  throw new Error('RESEND_API_KEY is not set in the environment variables');
+  console.warn('RESEND_API_KEY is not set in the environment variables. Email sending will be disabled.');
 }
 
-export const resend = new Resend(process.env.RESEND_API_KEY);
+export const resend = process.env.RESEND_API_KEY 
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
