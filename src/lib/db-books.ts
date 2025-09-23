@@ -1,6 +1,7 @@
 import { db } from "@/lib/firebase";
 import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, arrayUnion, getDoc, or } from "firebase/firestore";
 import type { Transaction } from "./types";
+import type { CollaboratorRole } from "@/components/dashboard/manage-collaborators-dialog";
 
 export async function createBook({ name, ownerId, ownerEmail }: { name: string; ownerId: string; ownerEmail: string }) {
   const docRef = await addDoc(collection(db, "books"), {
@@ -15,18 +16,14 @@ export async function createBook({ name, ownerId, ownerEmail }: { name: string; 
 
 export async function getBooks(userId: string, userEmail: string) {
     if (!userEmail) return [];
-
-    const ownedBooksQuery = query(collection(db, "books"), where("ownerId", "==", userId));
-    const sharedBooksQuery = query(collection(db, "books"), where("collaborators", "array-contains-any", [
-        { email: userEmail, status: 'accepted', role: 'Viewer' },
-        { email: userEmail, status: 'accepted', role: 'Editor' },
-    ]));
     
+    const lowercasedEmail = userEmail.toLowerCase();
+
     const combinedQuery = query(collection(db, "books"), or(
         where("ownerId", "==", userId),
         where("collaborators", "array-contains-any", [
-            { email: userEmail, status: 'accepted', role: 'Viewer' },
-            { email: userEmail, status: 'accepted', role: 'Editor' },
+            { email: lowercasedEmail, status: 'accepted', role: 'Full Access' },
+            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only' },
         ])
     ));
 
@@ -39,8 +36,6 @@ export async function getBooks(userId: string, userEmail: string) {
     const bookIds = booksData.map(b => b.id);
     if (bookIds.length === 0) return [];
     
-    // Firestore's 'in' operator is limited to 30 items. 
-    // If a user has more books, this part needs chunking into multiple queries.
     const transactionsQuery = query(collection(db, "transactions"), where("bookId", "in", bookIds));
     const transactionsSnapshot = await getDocs(transactionsQuery);
 
@@ -67,11 +62,17 @@ export async function getBooks(userId: string, userEmail: string) {
             .reduce((sum, t) => sum + t.amount, 0);
         const balance = income - expenses;
 
+        const currentUserRole = book.ownerId === userId 
+            ? 'Owner' 
+            : book.collaborators.find((c: any) => c.email.toLowerCase() === lowercasedEmail)?.role || null;
+
+
         return {
             ...book,
             income,
             expenses,
             balance,
+            currentUserRole,
         };
     });
 }
@@ -92,6 +93,7 @@ export async function getTransactionsForBook(bookId: string): Promise<Transactio
       date: data.date.toDate(),
       type: data.type,
       paymentMethod: data.paymentMethod,
+      userId: data.userId, // Pass userId for filtering
     };
   });
   return transactions;
@@ -112,11 +114,11 @@ export async function addPaymentMethod({ name, userId }: { name: string; userId:
     return docRef.id;
 }
 
-export async function addCollaborator(bookId: string, email: string, role: 'Viewer' | 'Editor') {
+export async function addCollaborator(bookId: string, email: string, role: CollaboratorRole) {
   const bookRef = doc(db, "books", bookId);
   await updateDoc(bookRef, {
     collaborators: arrayUnion({
-      email,
+      email: email.toLowerCase(),
       role,
       status: 'pending'
     })
@@ -131,13 +133,14 @@ export async function acceptInvitation(bookId: string, email: string): Promise<b
     console.error("Book not found");
     return false;
   }
-
+  
+  const lowercasedEmail = email.toLowerCase();
   const bookData = bookSnap.data();
   const collaborators = bookData.collaborators || [];
   
   let collaboratorFound = false;
   const updatedCollaborators = collaborators.map((c: any) => {
-    if (c.email === email && c.status === 'pending') {
+    if (c.email.toLowerCase() === lowercasedEmail && c.status === 'pending') {
       collaboratorFound = true;
       return { ...c, status: 'accepted' };
     }

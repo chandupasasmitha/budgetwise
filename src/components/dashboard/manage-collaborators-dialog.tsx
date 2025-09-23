@@ -24,9 +24,11 @@ interface ManageCollaboratorsDialogProps {
   onClose: () => void;
 }
 
+export type CollaboratorRole = "Full Access" | "Add Transactions Only";
+
 export default function ManageCollaboratorsDialog({ book, isOpen, onClose }: ManageCollaboratorsDialogProps) {
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"Viewer" | "Editor">("Viewer");
+  const [role, setRole] = useState<CollaboratorRole>("Add Transactions Only");
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -92,13 +94,13 @@ export default function ManageCollaboratorsDialog({ book, isOpen, onClose }: Man
           </div>
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
-            <Select onValueChange={(value: "Viewer" | "Editor") => setRole(value)} defaultValue={role}>
+            <Select onValueChange={(value: CollaboratorRole) => setRole(value)} defaultValue={role}>
               <SelectTrigger id="role">
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Viewer">Viewer</SelectItem>
-                <SelectItem value="Editor">Editor</SelectItem>
+                <SelectItem value="Add Transactions Only">Add Transactions Only</SelectItem>
+                <SelectItem value="Full Access">Full Access</SelectItem>
               </SelectContent>
             </Select>
           </div>

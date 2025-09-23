@@ -6,6 +6,7 @@ export type Transaction = {
   date: Date;
   description: string;
   paymentMethod: string;
+  userId?: string;
 };
 
 export type User = {

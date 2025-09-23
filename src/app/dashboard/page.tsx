@@ -30,6 +30,7 @@ interface Book {
   expenses?: number;
   income?: number;
   createdAt: any;
+  currentUserRole?: 'Owner' | 'Full Access' | 'Add Transactions Only';
 }
 
 // Modal component for creating a new book
@@ -165,7 +166,7 @@ const Dashboard = ({
             <>
                 <Separator />
                 <div>
-                    <h2 className="text-xl font-semibold mb-4">Shared With You</h2>
+                    <h2 className="text-xl font-semibold my-4">Shared With You</h2>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {sharedBooks.map((book) => <BookCard key={book.id} book={book} />)}
                     </div>
@@ -194,18 +195,27 @@ interface CashBookProps {
 const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  
+  const canViewDetails = book.currentUserRole === 'Owner' || book.currentUserRole === 'Full Access';
 
   useEffect(() => {
     async function fetchTransactions() {
       if (!book) return;
       setLoading(true);
       const transactionsData = await getTransactionsForBook(book.id);
-      const sortedTransactions = transactionsData.sort((a, b) => b.date.getTime() - a.date.getTime());
+      
+      let filteredTransactions = transactionsData;
+      if (book.currentUserRole === 'Add Transactions Only' && user) {
+        filteredTransactions = transactionsData.filter(t => t.userId === user.uid);
+      }
+      
+      const sortedTransactions = filteredTransactions.sort((a, b) => b.date.getTime() - a.date.getTime());
       setTransactions(sortedTransactions);
       setLoading(false);
     }
     fetchTransactions();
-  }, [book]);
+  }, [book, user, book.currentUserRole]);
 
   const recentTransactions = transactions.slice(0, 10);
   const expenses = transactions.filter(t => t.type === 'expense');
@@ -223,36 +233,44 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <h1 className="text-2xl md:text-3xl font-bold">{book.name}</h1>
-        <div className="text-lg sm:text-2xl font-bold">
-            Balance:{" "}
-            <span
-              className={
-                (book.balance ?? 0) >= 0 ? "text-green-600" : "text-red-600"
-              }
-            >
-              ${(book.balance ?? 0).toLocaleString()}
-            </span>
-          </div>
+        {canViewDetails && (
+            <div className="text-lg sm:text-2xl font-bold">
+                Balance:{" "}
+                <span
+                  className={
+                    (book.balance ?? 0) >= 0 ? "text-green-600" : "text-red-600"
+                  }
+                >
+                  ${(book.balance ?? 0).toLocaleString()}
+                </span>
+            </div>
+        )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <OverviewCards transactions={transactions} />
-      </div>
-      <div className="grid gap-4 xl:grid-cols-3">
-        <div className="grid auto-rows-max items-start gap-4 xl:col-span-3">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-1 bg-card rounded-xl shadow-sm p-4">
-              <h3 className="mb-2 text-lg font-semibold">Spending Trend</h3>
-              <SpendingTrendChart expenses={expenses} />
+      {canViewDetails && (
+        <>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <OverviewCards transactions={transactions} />
             </div>
-            <div className="sm:col-span-1 bg-card rounded-xl shadow-sm p-4">
-              <h3 className="mb-2 text-lg font-semibold">Category Breakdown</h3>
-              <CategoryPieChart expenses={expenses} />
+            <div className="grid gap-4 xl:grid-cols-3">
+                <div className="grid auto-rows-max items-start gap-4 xl:col-span-3">
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="sm:col-span-1 bg-card rounded-xl shadow-sm p-4">
+                    <h3 className="mb-2 text-lg font-semibold">Spending Trend</h3>
+                    <SpendingTrendChart expenses={expenses} />
+                    </div>
+                    <div className="sm:col-span-1 bg-card rounded-xl shadow-sm p-4">
+                    <h3 className="mb-2 text-lg font-semibold">Category Breakdown</h3>
+                    <CategoryPieChart expenses={expenses} />
+                    </div>
+                </div>
+                </div>
             </div>
-          </div>
-          <RecentTransactions transactions={recentTransactions} bookId={book.id} isLoading={loading} onTransactionAdded={onTransactionAdded} />
-        </div>
-      </div>
+        </>
+      )}
+      
+      <RecentTransactions transactions={recentTransactions} bookId={book.id} isLoading={loading} onTransactionAdded={onTransactionAdded} />
+
     </div>
   );
 };
@@ -266,9 +284,9 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchBooks = useCallback(async () => {
-    if (user) {
+    if (user && user.email) {
       setIsLoading(true);
-      const userBooks = await getBooks(user.uid, user.email || "");
+      const userBooks = await getBooks(user.uid, user.email);
       const sortedBooks = userBooks.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
       setBooks(
         sortedBooks.map((b: any) => ({
@@ -280,6 +298,7 @@ export default function DashboardPage() {
           expenses: b.expenses ?? 0,
           income: b.income ?? 0,
           createdAt: b.createdAt,
+          currentUserRole: b.currentUserRole,
         }))
       );
       setIsLoading(false);
@@ -291,17 +310,29 @@ export default function DashboardPage() {
   }, [fetchBooks]);
   
   const handleRefreshData = useCallback(async () => {
-    await fetchBooks();
-    if (selectedBook) {
-      const updatedBook = books.find(b => b.id === selectedBook.id);
-      if (updatedBook) {
-        setSelectedBook(updatedBook);
-      } else {
-        // The book might have been removed or is no longer shared
-        setSelectedBook(null);
-      }
+    if (user && user.email) {
+        await fetchBooks();
+        if (selectedBook) {
+            const updatedBooks = await getBooks(user.uid, user.email);
+            const updatedSelectedBook = updatedBooks.find(b => b.id === selectedBook.id);
+            if (updatedSelectedBook) {
+                 setSelectedBook({
+                    id: updatedSelectedBook.id,
+                    name: updatedSelectedBook.name ?? "Untitled",
+                    ownerId: updatedSelectedBook.ownerId,
+                    ownerEmail: updatedSelectedBook.ownerEmail,
+                    balance: updatedSelectedBook.balance ?? 0,
+                    expenses: updatedSelectedBook.expenses ?? 0,
+                    income: updatedSelectedBook.income ?? 0,
+                    createdAt: updatedSelectedBook.createdAt,
+                    currentUserRole: (updatedSelectedBook as any).currentUserRole,
+                 });
+            } else {
+                setSelectedBook(null);
+            }
+        }
     }
-  }, [fetchBooks, selectedBook, books]);
+  }, [fetchBooks, selectedBook, user]);
 
   const handleCreateBook = async (bookName: string) => {
     if (!user) return;
