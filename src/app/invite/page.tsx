@@ -36,8 +36,8 @@ function InvitationContent() {
       return;
     }
 
-    // If user is logged in, but with the wrong email
-    if (user.email !== email) {
+    // If user is logged in, but with the wrong email (case-insensitive check)
+    if (user.email?.toLowerCase() !== email.toLowerCase()) {
       setStatus("error");
       setMessage(`This invitation is for ${email}. You are logged in as ${user.email}. Please log out and use the correct account.`);
       return;
