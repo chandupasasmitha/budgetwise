@@ -237,9 +237,13 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
       setLoading(true);
       const transactionsData = await getTransactionsForBook(book.id);
 
-      const sortedTransactions = transactionsData.sort(
-        (a, b) => b.date.getTime() - a.date.getTime()
-      );
+      // Ensure transaction dates are Date objects
+      const sortedTransactions = transactionsData
+        .map((t: any) => ({
+          ...t,
+          date: t.date instanceof Date ? t.date : new Date(t.date),
+        }))
+        .sort((a, b) => b.date.getTime() - a.date.getTime());
       setTransactions(sortedTransactions);
       setLoading(false);
     }
@@ -346,9 +350,18 @@ export default function DashboardPage() {
     if (user && user.email) {
       setIsLoading(true);
       const userBooks = await getBooks(user.uid, user.email);
-      const sortedBooks = userBooks.sort(
-        (a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()
-      );
+      // Ensure createdAt is a Date object for sorting
+      const sortedBooks = userBooks
+        .map((b: any) => ({
+          ...b,
+          createdAt:
+            b.createdAt instanceof Date
+              ? b.createdAt
+              : b.createdAt?.toDate
+              ? b.createdAt.toDate()
+              : new Date(b.createdAt),
+        }))
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       setBooks(
         sortedBooks.map((b: any) => ({
           id: b.id,
@@ -377,7 +390,17 @@ export default function DashboardPage() {
       await fetchBooks();
       if (selectedBook) {
         const updatedBooks = await getBooks(user.uid, user.email);
-        const updatedSelectedBook = updatedBooks.find(
+        // Ensure createdAt is a Date object
+        const updatedBooksProcessed = updatedBooks.map((b: any) => ({
+          ...b,
+          createdAt:
+            b.createdAt instanceof Date
+              ? b.createdAt
+              : b.createdAt?.toDate
+              ? b.createdAt.toDate()
+              : new Date(b.createdAt),
+        }));
+        const updatedSelectedBook = updatedBooksProcessed.find(
           (b) => b.id === selectedBook.id
         );
         if (updatedSelectedBook) {
@@ -390,9 +413,9 @@ export default function DashboardPage() {
             expenses: updatedSelectedBook.expenses ?? 0,
             income: updatedSelectedBook.income ?? 0,
             createdAt: updatedSelectedBook.createdAt,
-            currentUserRole: (updatedSelectedBook as any).currentUserRole,
-            collaborators: (updatedSelectedBook as any).collaborators || [],
-            visibilitySettings: (updatedSelectedBook as any).visibilitySettings,
+            currentUserRole: updatedSelectedBook.currentUserRole,
+            collaborators: updatedSelectedBook.collaborators || [],
+            visibilitySettings: updatedSelectedBook.visibilitySettings,
           });
         } else {
           setSelectedBook(null);
@@ -424,6 +447,11 @@ export default function DashboardPage() {
     [books]
   );
 
+  // Add ownedBooks/sharedBooks before rendering
+  const ownedBooks = books.filter((book) => book.ownerId === user?.uid);
+  const sharedBooks = books.filter((book) => book.ownerId !== user?.uid);
+
+  // Restore loading state block
   if (isLoading) {
     return (
       <div className="flex-1 space-y-6">
@@ -439,9 +467,6 @@ export default function DashboardPage() {
       </div>
     );
   }
-
-  const ownedBooks = books.filter((book) => book.ownerId === user?.uid);
-  const sharedBooks = books.filter((book) => book.ownerId !== user?.uid);
 
   return (
     <>
