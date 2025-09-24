@@ -4,8 +4,8 @@ export async function POST(req: Request) {
   // If the resend object is null (because the API key is missing),
   // we immediately stop and return an error.
   if (!resend) {
-    console.error("Resend is not configured. RESEND_API_KEY is missing.");
-    return Response.json({ success: false, error: "Email service is not configured." }, { status: 500 });
+    console.error("Resend is not configured. RESEND_API_KEY is missing from environment variables.");
+    return Response.json({ success: false, error: "Email service is not configured. The API key is missing." }, { status: 500 });
   }
 
   try {

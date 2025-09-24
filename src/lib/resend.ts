@@ -1,14 +1,9 @@
 import { Resend } from 'resend';
 
-// Next.js automatically loads environment variables from .env files.
-// We no longer need to manually call `dotenv/config`.
+// This file initializes the Resend client.
+// It relies on the RESEND_API_KEY environment variable being set.
+// Next.js automatically loads this from .env files.
 
-// We check if the key exists. If it does, we initialize Resend.
-// If not, we export `null` and log a warning.
 const resendKey = process.env.RESEND_API_KEY;
-
-if (!resendKey) {
-  console.warn('RESEND_API_KEY is not set in the environment variables. Email sending will be disabled.');
-}
 
 export const resend = resendKey ? new Resend(resendKey) : null;
