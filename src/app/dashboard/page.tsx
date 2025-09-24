@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
@@ -6,21 +5,22 @@ import OverviewCards from "@/components/dashboard/overview-cards";
 import CategoryPieChart from "@/components/dashboard/category-pie-chart";
 import SpendingTrendChart from "@/components/dashboard/spending-trend-chart";
 import RecentTransactions from "@/components/dashboard/recent-transactions";
-import {
-  createBook,
-  getBooks,
-  getTransactionsForBook,
-} from "@/lib/db-books";
+import { createBook, getBooks, getTransactionsForBook } from "@/lib/db-books";
 import { useAuth } from "@/hooks/use-auth";
 import type { Collaborator, Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { ArrowLeft, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import ManageCollaboratorsDialog from "@/components/dashboard/manage-collaborators-dialog";
 import { Separator } from "@/components/ui/separator";
-
 
 interface Book {
   id: string;
@@ -31,13 +31,13 @@ interface Book {
   expenses?: number;
   income?: number;
   createdAt: any;
-  currentUserRole?: 'Owner' | 'Full Access' | 'Add Transactions Only';
+  currentUserRole?: "Owner" | "Full Access" | "Add Transactions Only";
   collaborators: Collaborator[];
   visibilitySettings?: {
     balance: boolean;
     income: boolean;
     expenses: boolean;
-  }
+  };
 }
 
 // Modal component for creating a new book
@@ -54,25 +54,27 @@ const NewBookModal = ({ isOpen, onClose, onSave }: NewBookModalProps) => {
       setBookName("");
     }
   };
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Create New Cash Book</DialogTitle>
-            </DialogHeader>
-            <div className="py-4">
-                <Input
-                    placeholder="e.g., January Budget, Home Renovation"
-                    value={bookName}
-                    onChange={(e) => setBookName(e.target.value)}
-                />
-            </div>
-            <DialogFooter>
-                <Button variant="outline" onClick={onClose}>Cancel</Button>
-                <Button onClick={handleSave}>Create</Button>
-            </DialogFooter>
-        </DialogContent>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Create New Cash Book</DialogTitle>
+        </DialogHeader>
+        <div className="py-4">
+          <Input
+            placeholder="e.g., January Budget, Home Renovation"
+            value={bookName}
+            onChange={(e) => setBookName(e.target.value)}
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave}>Create</Button>
+        </DialogFooter>
+      </DialogContent>
     </Dialog>
   );
 };
@@ -94,13 +96,14 @@ const Dashboard = ({
   currentUserId,
   onRefreshBooks,
 }: DashboardProps) => {
-  const [collaboratorsModalBook, setCollaboratorsModalBook] = useState<Book | null>(null);
+  const [collaboratorsModalBook, setCollaboratorsModalBook] =
+    useState<Book | null>(null);
 
   const handleOpenCollaborators = (e: React.MouseEvent, book: Book) => {
     e.stopPropagation(); // Prevent card click event
     setCollaboratorsModalBook(book);
   };
-  
+
   const BookCard = ({ book }: { book: Book }) => (
     <div
       onClick={() => onSelectBook(book)}
@@ -137,11 +140,17 @@ const Dashboard = ({
       </div>
       <div className="mt-4 pt-4 border-t flex justify-between items-center">
         {book.ownerId !== currentUserId && book.ownerEmail && (
-            <span className="text-xs text-muted-foreground">Owner: {book.ownerEmail}</span>
+          <span className="text-xs text-muted-foreground">
+            Owner: {book.ownerEmail}
+          </span>
         )}
         <div className="flex-grow" />
         {book.ownerId === currentUserId && (
-          <Button variant="ghost" size="sm" onClick={(e) => handleOpenCollaborators(e, book)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => handleOpenCollaborators(e, book)}
+          >
             <Users className="w-4 h-4 mr-2" />
             Collaborators
           </Button>
@@ -155,47 +164,50 @@ const Dashboard = ({
       <div className="flex-1 space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
-          <Button onClick={onOpenModal}>
-            Create New Book
-          </Button>
+          <Button onClick={onOpenModal}>Create New Book</Button>
         </div>
-        
+
         <div>
-            <h2 className="text-xl font-semibold mb-4">Your Cash Books</h2>
-            {ownedBooks.length > 0 ? (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {ownedBooks.map((book) => <BookCard key={book.id} book={book} />)}
-                </div>
-            ) : (
-                <p className="text-muted-foreground">You haven't created any cash books yet.</p>
-            )}
+          <h2 className="text-xl font-semibold mb-4">Your Cash Books</h2>
+          {ownedBooks.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {ownedBooks.map((book) => (
+                <BookCard key={book.id} book={book} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground">
+              You haven't created any cash books yet.
+            </p>
+          )}
         </div>
 
         {sharedBooks.length > 0 && (
-            <>
-                <Separator />
-                <div>
-                    <h2 className="text-xl font-semibold my-4">Shared With You</h2>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {sharedBooks.map((book) => <BookCard key={book.id} book={book} />)}
-                    </div>
-                </div>
-            </>
+          <>
+            <Separator />
+            <div>
+              <h2 className="text-xl font-semibold my-4">Shared With You</h2>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {sharedBooks.map((book) => (
+                  <BookCard key={book.id} book={book} />
+                ))}
+              </div>
+            </div>
+          </>
         )}
-
       </div>
       {collaboratorsModalBook && (
-        <ManageCollaboratorsDialog 
+        <ManageCollaboratorsDialog
           book={collaboratorsModalBook}
           isOpen={!!collaboratorsModalBook}
           onClose={() => setCollaboratorsModalBook(null)}
           onCollaboratorsUpdate={async () => {
             await onRefreshBooks();
-            setCollaboratorsModalBook(prev => {
-                if (!prev) return null;
-                // We need to find the updated book data from the refreshed list, but this component doesn't have it.
-                // For now, let's just close the dialog. A better solution would be to get the updated book list here.
-                return null;
+            setCollaboratorsModalBook((prev) => {
+              if (!prev) return null;
+              // We need to find the updated book data from the refreshed list, but this component doesn't have it.
+              // For now, let's just close the dialog. A better solution would be to get the updated book list here.
+              return null;
             });
           }}
         />
@@ -214,40 +226,52 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  
+
   const isOwner = book.ownerId === user?.uid;
-  const canViewDetails = book.currentUserRole === 'Owner' || book.currentUserRole === 'Full Access';
+  const canViewDetails =
+    book.currentUserRole === "Owner" || book.currentUserRole === "Full Access";
 
   useEffect(() => {
     async function fetchTransactions() {
       if (!book) return;
       setLoading(true);
       const transactionsData = await getTransactionsForBook(book.id);
-      
-      const sortedTransactions = transactionsData.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+      const sortedTransactions = transactionsData.sort(
+        (a, b) => b.date.getTime() - a.date.getTime()
+      );
       setTransactions(sortedTransactions);
       setLoading(false);
     }
     fetchTransactions();
   }, [book]);
 
-  const displayedTransactions = canViewDetails || !user 
-    ? transactions
-    : transactions.filter(t => t.userId === user.uid);
+  const displayedTransactions =
+    canViewDetails || !user
+      ? transactions
+      : transactions.filter((t) => t.userId === user.uid);
 
-  const expenses = transactions.filter(t => t.type === 'expense');
-  
-  const showBalance = isOwner || book.currentUserRole === 'Full Access' || (book.currentUserRole === 'Add Transactions Only' && book.visibilitySettings?.balance);
-  const showIncome = isOwner || book.currentUserRole === 'Full Access' || (book.currentUserRole === 'Add Transactions Only' && book.visibilitySettings?.income);
-  const showExpenses = isOwner || book.currentUserRole === 'Full Access' || (book.currentUserRole === 'Add Transactions Only' && book.visibilitySettings?.expenses);
+  const expenses = transactions.filter((t) => t.type === "expense");
+
+  const showBalance =
+    isOwner ||
+    book.currentUserRole === "Full Access" ||
+    (book.currentUserRole === "Add Transactions Only" &&
+      book.visibilitySettings?.balance);
+  const showIncome =
+    isOwner ||
+    book.currentUserRole === "Full Access" ||
+    (book.currentUserRole === "Add Transactions Only" &&
+      book.visibilitySettings?.income);
+  const showExpenses =
+    isOwner ||
+    book.currentUserRole === "Full Access" ||
+    (book.currentUserRole === "Add Transactions Only" &&
+      book.visibilitySettings?.expenses);
 
   return (
     <div className="flex-1 space-y-6">
-      <Button
-        onClick={onBack}
-        variant="ghost"
-        className="flex items-center"
-      >
+      <Button onClick={onBack} variant="ghost" className="flex items-center">
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back to Dashboard
       </Button>
@@ -255,49 +279,57 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <h1 className="text-2xl md:text-3xl font-bold">{book.name}</h1>
         {showBalance && (
-            <div className="text-lg sm:text-2xl font-bold">
-                Balance:{" "}
-                <span
-                  className={
-                    (book.balance ?? 0) >= 0 ? "text-green-600" : "text-red-600"
-                  }
-                >
-                  ${(book.balance ?? 0).toLocaleString()}
-                </span>
-            </div>
+          <div className="text-lg sm:text-2xl font-bold">
+            Balance:{" "}
+            <span
+              className={
+                (book.balance ?? 0) >= 0 ? "text-green-600" : "text-red-600"
+              }
+            >
+              ${(book.balance ?? 0).toLocaleString()}
+            </span>
+          </div>
         )}
       </div>
 
       {(canViewDetails || showIncome || showExpenses) && (
         <>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <OverviewCards 
-                  transactions={transactions} 
-                  showIncome={showIncome}
-                  showExpenses={showExpenses}
-                />
-            </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <OverviewCards
+              transactions={transactions}
+              showIncome={showIncome ?? false}
+              showExpenses={showExpenses ?? false}
+            />
+          </div>
           {canViewDetails && (
             <div className="grid gap-4 xl:grid-cols-3">
-                <div className="grid auto-rows-max items-start gap-4 xl:col-span-3">
+              <div className="grid auto-rows-max items-start gap-4 xl:col-span-3">
                 <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="sm:col-span-1 bg-card rounded-xl shadow-sm p-4">
-                    <h3 className="mb-2 text-lg font-semibold">Spending Trend</h3>
+                  <div className="sm:col-span-1 bg-card rounded-xl shadow-sm p-4">
+                    <h3 className="mb-2 text-lg font-semibold">
+                      Spending Trend
+                    </h3>
                     <SpendingTrendChart expenses={expenses} />
-                    </div>
-                    <div className="sm:col-span-1 bg-card rounded-xl shadow-sm p-4">
-                    <h3 className="mb-2 text-lg font-semibold">Category Breakdown</h3>
+                  </div>
+                  <div className="sm:col-span-1 bg-card rounded-xl shadow-sm p-4">
+                    <h3 className="mb-2 text-lg font-semibold">
+                      Category Breakdown
+                    </h3>
                     <CategoryPieChart expenses={expenses} />
-                    </div>
+                  </div>
                 </div>
-                </div>
+              </div>
             </div>
           )}
         </>
       )}
-      
-      <RecentTransactions transactions={displayedTransactions} bookId={book.id} isLoading={loading} onTransactionAdded={onTransactionAdded} />
 
+      <RecentTransactions
+        transactions={displayedTransactions}
+        bookId={book.id}
+        isLoading={loading}
+        onTransactionAdded={onTransactionAdded}
+      />
     </div>
   );
 };
@@ -314,7 +346,9 @@ export default function DashboardPage() {
     if (user && user.email) {
       setIsLoading(true);
       const userBooks = await getBooks(user.uid, user.email);
-      const sortedBooks = userBooks.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+      const sortedBooks = userBooks.sort(
+        (a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()
+      );
       setBooks(
         sortedBooks.map((b: any) => ({
           id: b.id,
@@ -337,73 +371,86 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchBooks();
   }, [fetchBooks]);
-  
+
   const handleRefreshData = useCallback(async () => {
     if (user && user.email) {
-        await fetchBooks();
-        if (selectedBook) {
-            const updatedBooks = await getBooks(user.uid, user.email);
-            const updatedSelectedBook = updatedBooks.find(b => b.id === selectedBook.id);
-            if (updatedSelectedBook) {
-                 setSelectedBook({
-                    id: updatedSelectedBook.id,
-                    name: updatedSelectedBook.name ?? "Untitled",
-                    ownerId: updatedSelectedBook.ownerId,
-                    ownerEmail: updatedSelectedBook.ownerEmail,
-                    balance: updatedSelectedBook.balance ?? 0,
-                    expenses: updatedSelectedBook.expenses ?? 0,
-                    income: updatedSelectedBook.income ?? 0,
-                    createdAt: updatedSelectedBook.createdAt,
-                    currentUserRole: (updatedSelectedBook as any).currentUserRole,
-                    collaborators: (updatedSelectedBook as any).collaborators || [],
-                    visibilitySettings: (updatedSelectedBook as any).visibilitySettings,
-                 });
-            } else {
-                setSelectedBook(null);
-            }
+      await fetchBooks();
+      if (selectedBook) {
+        const updatedBooks = await getBooks(user.uid, user.email);
+        const updatedSelectedBook = updatedBooks.find(
+          (b) => b.id === selectedBook.id
+        );
+        if (updatedSelectedBook) {
+          setSelectedBook({
+            id: updatedSelectedBook.id,
+            name: updatedSelectedBook.name ?? "Untitled",
+            ownerId: updatedSelectedBook.ownerId,
+            ownerEmail: updatedSelectedBook.ownerEmail,
+            balance: updatedSelectedBook.balance ?? 0,
+            expenses: updatedSelectedBook.expenses ?? 0,
+            income: updatedSelectedBook.income ?? 0,
+            createdAt: updatedSelectedBook.createdAt,
+            currentUserRole: (updatedSelectedBook as any).currentUserRole,
+            collaborators: (updatedSelectedBook as any).collaborators || [],
+            visibilitySettings: (updatedSelectedBook as any).visibilitySettings,
+          });
+        } else {
+          setSelectedBook(null);
         }
+      }
     }
   }, [fetchBooks, selectedBook, user]);
 
   const handleCreateBook = async (bookName: string) => {
     if (!user) return;
     setIsLoading(true);
-    await createBook({ name: bookName, ownerId: user.uid, ownerEmail: user.email || 'N/A' });
+    await createBook({
+      name: bookName,
+      ownerId: user.uid,
+      ownerEmail: user.email || "N/A",
+    });
     setIsNewBookModalOpen(false);
     await fetchBooks();
     setIsLoading(false);
   };
-  
-  const handleSelectBook = useCallback((book: Book) => {
-      const fullBookDetails = books.find(b => b.id === book.id);
-      if(fullBookDetails) {
-          setSelectedBook(fullBookDetails);
+
+  const handleSelectBook = useCallback(
+    (book: Book) => {
+      const fullBookDetails = books.find((b) => b.id === book.id);
+      if (fullBookDetails) {
+        setSelectedBook(fullBookDetails);
       }
-  }, [books]);
+    },
+    [books]
+  );
 
   if (isLoading) {
     return (
       <div className="flex-1 space-y-6">
         <div className="flex items-center justify-between">
-            <Skeleton className="h-10 w-48" />
-            <Skeleton className="h-10 w-36" />
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-36" />
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            <Skeleton className="h-36" />
-            <Skeleton className="h-36" />
-            <Skeleton className="h-36" />
+          <Skeleton className="h-36" />
+          <Skeleton className="h-36" />
+          <Skeleton className="h-36" />
         </div>
       </div>
-    )
+    );
   }
 
-  const ownedBooks = books.filter(book => book.ownerId === user?.uid);
-  const sharedBooks = books.filter(book => book.ownerId !== user?.uid);
+  const ownedBooks = books.filter((book) => book.ownerId === user?.uid);
+  const sharedBooks = books.filter((book) => book.ownerId !== user?.uid);
 
   return (
     <>
       {selectedBook ? (
-        <CashBook book={selectedBook} onBack={() => setSelectedBook(null)} onTransactionAdded={handleRefreshData}/>
+        <CashBook
+          book={selectedBook}
+          onBack={() => setSelectedBook(null)}
+          onTransactionAdded={handleRefreshData}
+        />
       ) : (
         <Dashboard
           onSelectBook={handleSelectBook}
