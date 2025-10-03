@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, Paperclip, X } from "lucide-react";
+import { MoreHorizontal, Paperclip, X, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
@@ -55,6 +55,7 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
   const [viewingTransaction, setViewingTransaction] = useState<Transaction | null>(null);
   const [isEditingImage, setIsEditingImage] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<{ id: string; name: string }[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [editForm, setEditForm] = useState({
     description: "",
     amount: 0,
@@ -89,31 +90,44 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
     e.preventDefault();
     if (!editingTransaction) return;
 
+    setIsSubmitting(true);
     let imageUrl = editingTransaction.imageUrl;
 
-    if (editForm.image) {
-       const reader = new FileReader();
-       reader.readAsDataURL(editForm.image);
-       reader.onloadend = async () => {
-         const base64Image = reader.result;
-         const response = await fetch("/api/upload-image", {
-           method: "POST",
-           headers: { "Content-Type": "application/json" },
-           body: JSON.stringify({ image: base64Image }),
-         });
-         const result = await response.json();
-         if (result.success) {
-            imageUrl = result.url;
+    try {
+        if (editForm.image) {
+            const reader = new FileReader();
+            reader.readAsDataURL(editForm.image);
+            reader.onloadend = async () => {
+                const base64Image = reader.result;
+                const response = await fetch("/api/upload-image", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image: base64Image }),
+                });
+                const result = await response.json();
+                if (result.success) {
+                    imageUrl = result.url;
+                    await updateTransaction(imageUrl);
+                } else {
+                    throw new Error("Image upload failed");
+                }
+            }
+        } else {
             await updateTransaction(imageUrl);
-         }
-       }
-    } else {
-        await updateTransaction(imageUrl);
+        }
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Update failed",
+            description: error.message || "Could not update the transaction."
+        });
+        setIsSubmitting(false);
     }
   };
   
-  const updateTransaction = async (imageUrl?: string) => {
+  const updateTransaction = async (imageUrl?: string | null) => {
     if (!editingTransaction) return;
+
      await updateDoc(doc(db, "transactions", editingTransaction.id), {
       description: editForm.description,
       amount: editForm.amount,
@@ -121,7 +135,15 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
       paymentMethod: editForm.paymentMethod,
       imageUrl: imageUrl,
     });
+
+    toast({
+        title: "Transaction Updated",
+        description: "Your changes have been saved successfully."
+    });
+
     setEditingTransaction(null);
+    setIsEditingImage(false);
+    setIsSubmitting(false);
     onTransactionChange?.();
   }
 
@@ -345,7 +367,10 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
               <DialogClose asChild>
                 <Button type="button" variant="outline">Cancel</Button>
               </DialogClose>
-              <Button type="submit">Save Changes</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -381,7 +406,10 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
                 </div>
                 <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => { setIsEditingImage(false); setEditingTransaction(null); }}>Cancel</Button>
-                    <Button type="submit">Save Image</Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Image
+                    </Button>
                 </DialogFooter>
            </form>
         </DialogContent>
@@ -415,3 +443,5 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
 }
 
 export default TransactionsTable;
+
+    
