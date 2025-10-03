@@ -32,7 +32,8 @@ function getPublicIdFromUrl(url: string): string | null {
 
 export async function POST(request: Request) {
     if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-        return NextResponse.json({ success: false, error: "Cloudinary credentials are not set." }, { status: 500 });
+        console.error("Cloudinary credentials are not set on the server.");
+        return NextResponse.json({ success: false, error: "Image deletion service is not configured. Please contact the administrator." }, { status: 500 });
     }
 
     const { imageUrl } = await request.json();
