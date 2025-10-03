@@ -40,6 +40,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/hooks/use-auth";
 import { getPaymentMethods } from "@/lib/db-books";
 import Image from "next/image";
+import { useToast } from "@/hooks/use-toast";
 
 type TransactionsTableProps = {
   transactions: Transaction[];
@@ -48,6 +49,7 @@ type TransactionsTableProps = {
 
 function TransactionsTable({ transactions, onTransactionChange }: TransactionsTableProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
@@ -133,12 +135,37 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
       setIsEditingImage(true);
   }
 
-  const handleDeleteImage = async (transactionId: string) => {
-      await updateDoc(doc(db, "transactions", transactionId), {
-          imageUrl: null,
-      });
-      onTransactionChange?.();
-  }
+  const handleDeleteImage = async (transaction: Transaction) => {
+    if (!transaction.imageUrl) return;
+
+    try {
+        const response = await fetch("/api/delete-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imageUrl: transaction.imageUrl }),
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || "Failed to delete image from Cloudinary.");
+        }
+
+        await updateDoc(doc(db, "transactions", transaction.id), {
+            imageUrl: null,
+        });
+
+        toast({ title: "Image deleted successfully." });
+        onTransactionChange?.();
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Error deleting image",
+            description: error.message,
+        });
+    }
+}
+
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -226,7 +253,7 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
                             <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => handleImageEdit(transaction)}>Edit Image</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleDeleteImage(transaction.id)}>Delete Image</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDeleteImage(transaction)}>Delete Image</DropdownMenuItem>
                            </>
                         )}
                         <DropdownMenuSeparator />
