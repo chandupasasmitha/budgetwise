@@ -57,6 +57,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -526,6 +527,9 @@ function AddTransactionSheet({ bookId, onTransactionAdded }: AddTransactionSheet
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New Payment Method</DialogTitle>
+            <DialogDescription>
+                This payment method will be saved to your profile for future use.
+            </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Input 
@@ -545,4 +549,3 @@ function AddTransactionSheet({ bookId, onTransactionAdded }: AddTransactionSheet
 }
 
 export default AddTransactionSheet;
-

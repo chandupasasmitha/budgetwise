@@ -30,6 +30,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
@@ -303,8 +304,11 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Transaction</DialogTitle>
+            <DialogDescription>
+                Make changes to your transaction here. Click save when you're done.
+            </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleEditSubmit} className="space-y-4">
+          <form onSubmit={handleEditSubmit} className="space-y-4 pt-4">
             <div className="space-y-2">
               <Label htmlFor="edit-description">Description</Label>
               <Input
@@ -381,8 +385,11 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingTransaction?.imageUrl ? 'Edit' : 'Add'} Bill Image</DialogTitle>
+            <DialogDescription>
+                Upload a new image for your bill or remove the existing one.
+            </DialogDescription>
           </DialogHeader>
-           <form onSubmit={handleEditSubmit} className="space-y-4">
+           <form onSubmit={handleEditSubmit} className="space-y-4 pt-4">
                 <div className="space-y-2">
                     <Label>Bill Image</Label>
                     {editForm.imagePreview ? (
@@ -420,6 +427,9 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Bill/Receipt</DialogTitle>
+             <DialogDescription>
+              Viewing the attached image for transaction: "{viewingTransaction?.description}".
+            </DialogDescription>
           </DialogHeader>
           <div className="mt-4 relative w-full aspect-video">
             {viewingTransaction?.imageUrl && <Image src={viewingTransaction.imageUrl} alt="Bill" layout="fill" objectFit="contain" />}
@@ -443,5 +453,3 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
 }
 
 export default TransactionsTable;
-
-    
