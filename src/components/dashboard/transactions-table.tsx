@@ -52,7 +52,7 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
   const { toast } = useToast();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
-  const [viewingImage, setViewingImage] = useState<string | null>(null);
+  const [viewingTransaction, setViewingTransaction] = useState<Transaction | null>(null);
   const [isEditingImage, setIsEditingImage] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<{ id: string; name: string }[]>([]);
   const [editForm, setEditForm] = useState({
@@ -125,8 +125,8 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
     onTransactionChange?.();
   }
 
-  const handleViewImage = (imageUrl: string) => {
-    setViewingImage(imageUrl);
+  const handleViewImage = (transaction: Transaction) => {
+    setViewingTransaction(transaction);
     setIsImageViewerOpen(true);
   };
   
@@ -213,7 +213,7 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
                     <div className="font-medium flex items-center gap-2">
                         {transaction.description}
                         {transaction.imageUrl && (
-                            <button onClick={() => handleViewImage(transaction.imageUrl!)} className="text-muted-foreground hover:text-primary">
+                            <button onClick={() => handleViewImage(transaction)} className="text-muted-foreground hover:text-primary">
                                 <Paperclip className="h-4 w-4" />
                             </button>
                         )}
@@ -249,11 +249,17 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
                         <DropdownMenuItem onClick={() => handleEdit(transaction)}>
                           Edit Transaction
                         </DropdownMenuItem>
-                         {transaction.imageUrl && transaction.type === 'expense' && (
+                         {transaction.type === 'expense' && (
                             <>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => handleImageEdit(transaction)}>Edit Image</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleDeleteImage(transaction)}>Delete Image</DropdownMenuItem>
+                                {transaction.imageUrl ? (
+                                    <>
+                                        <DropdownMenuItem onClick={() => handleImageEdit(transaction)}>Edit Bill</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleDeleteImage(transaction)}>Delete Bill</DropdownMenuItem>
+                                    </>
+                                ) : (
+                                    <DropdownMenuItem onClick={() => handleImageEdit(transaction)}>Add Bill</DropdownMenuItem>
+                                )}
                            </>
                         )}
                         <DropdownMenuSeparator />
@@ -349,7 +355,7 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
       <Dialog open={isEditingImage} onOpenChange={(isOpen) => { if (!isOpen) { setIsEditingImage(false); setEditingTransaction(null) }}}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Bill Image</DialogTitle>
+            <DialogTitle>{editingTransaction?.imageUrl ? 'Edit' : 'Add'} Bill Image</DialogTitle>
           </DialogHeader>
            <form onSubmit={handleEditSubmit} className="space-y-4">
                 <div className="space-y-2">
@@ -388,8 +394,20 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
             <DialogTitle>Bill/Receipt</DialogTitle>
           </DialogHeader>
           <div className="mt-4 relative w-full aspect-video">
-            {viewingImage && <Image src={viewingImage} alt="Bill" layout="fill" objectFit="contain" />}
+            {viewingTransaction?.imageUrl && <Image src={viewingTransaction.imageUrl} alt="Bill" layout="fill" objectFit="contain" />}
           </div>
+           {viewingTransaction && (
+            <DialogFooter className="mt-4">
+                <Button variant="outline" onClick={() => {
+                    setIsImageViewerOpen(false);
+                    handleImageEdit(viewingTransaction);
+                }}>Edit</Button>
+                <Button variant="destructive" onClick={() => {
+                    setIsImageViewerOpen(false);
+                    handleDeleteImage(viewingTransaction);
+                }}>Delete</Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </>
