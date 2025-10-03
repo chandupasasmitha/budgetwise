@@ -113,6 +113,7 @@ export async function getTransactionsForBook(bookId: string): Promise<Transactio
       type: data.type,
       paymentMethod: data.paymentMethod,
       userId: data.userId, // Pass userId for filtering
+      imageUrl: data.imageUrl,
     };
   });
   return transactions;

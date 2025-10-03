@@ -1,3 +1,4 @@
+
 "use client";
 import type { Transaction } from "@/lib/types";
 import { useState } from "react";
@@ -17,10 +18,11 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Paperclip, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
@@ -37,6 +39,7 @@ import { EXPENSE_CATEGORIES } from "@/lib/constants";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { getPaymentMethods } from "@/lib/db-books";
+import Image from "next/image";
 
 type TransactionsTableProps = {
   transactions: Transaction[];
@@ -46,12 +49,17 @@ type TransactionsTableProps = {
 function TransactionsTable({ transactions, onTransactionChange }: TransactionsTableProps) {
   const { user } = useAuth();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
+  const [isEditingImage, setIsEditingImage] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<{ id: string; name: string }[]>([]);
   const [editForm, setEditForm] = useState({
     description: "",
     amount: 0,
     category: "",
     paymentMethod: "",
+    image: undefined as File | undefined,
+    imagePreview: null as string | null,
   });
 
   const handleDelete = async (id: string) => {
@@ -66,6 +74,8 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
       amount: transaction.amount,
       category: transaction.category || "",
       paymentMethod: transaction.paymentMethod,
+      image: undefined,
+      imagePreview: transaction.imageUrl || null,
     });
     if (user) {
       const methods = await getPaymentMethods(user.uid);
@@ -76,14 +86,74 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTransaction) return;
-    await updateDoc(doc(db, "transactions", editingTransaction.id), {
+
+    let imageUrl = editingTransaction.imageUrl;
+
+    if (editForm.image) {
+       const reader = new FileReader();
+       reader.readAsDataURL(editForm.image);
+       reader.onloadend = async () => {
+         const base64Image = reader.result;
+         const response = await fetch("/api/upload-image", {
+           method: "POST",
+           headers: { "Content-Type": "application/json" },
+           body: JSON.stringify({ image: base64Image }),
+         });
+         const result = await response.json();
+         if (result.success) {
+            imageUrl = result.url;
+            await updateTransaction(imageUrl);
+         }
+       }
+    } else {
+        await updateTransaction(imageUrl);
+    }
+  };
+  
+  const updateTransaction = async (imageUrl?: string) => {
+    if (!editingTransaction) return;
+     await updateDoc(doc(db, "transactions", editingTransaction.id), {
       description: editForm.description,
       amount: editForm.amount,
       category: editingTransaction.type === 'expense' ? editForm.category : null,
       paymentMethod: editForm.paymentMethod,
+      imageUrl: imageUrl,
     });
     setEditingTransaction(null);
     onTransactionChange?.();
+  }
+
+  const handleViewImage = (imageUrl: string) => {
+    setViewingImage(imageUrl);
+    setIsImageViewerOpen(true);
+  };
+  
+  const handleImageEdit = (transaction: Transaction) => {
+      handleEdit(transaction);
+      setIsEditingImage(true);
+  }
+
+  const handleDeleteImage = async (transactionId: string) => {
+      await updateDoc(doc(db, "transactions", transactionId), {
+          imageUrl: null,
+      });
+      onTransactionChange?.();
+  }
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setEditForm(f => ({ ...f, image: file }));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditForm(f => ({ ...f, imagePreview: reader.result as string}));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImagePreview = () => {
+    setEditForm(f => ({ ...f, image: undefined, imagePreview: null }));
   };
 
   return (
@@ -113,7 +183,14 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
               transactions.map((transaction) => (
                 <TableRow key={transaction.id}>
                   <TableCell>
-                    <div className="font-medium">{transaction.description}</div>
+                    <div className="font-medium flex items-center gap-2">
+                        {transaction.description}
+                        {transaction.imageUrl && (
+                            <button onClick={() => handleViewImage(transaction.imageUrl!)} className="text-muted-foreground hover:text-primary">
+                                <Paperclip className="h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {transaction.type === 'expense' ? (
@@ -143,10 +220,18 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => handleEdit(transaction)}>
-                          Edit
+                          Edit Transaction
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDelete(transaction.id)}>
-                          Delete
+                         {transaction.imageUrl && transaction.type === 'expense' && (
+                            <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleImageEdit(transaction)}>Edit Image</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDeleteImage(transaction.id)}>Delete Image</DropdownMenuItem>
+                           </>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(transaction.id)}>
+                          Delete Transaction
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -158,7 +243,8 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
         </Table>
       </div>
       
-      <Dialog open={!!editingTransaction} onOpenChange={(isOpen) => !isOpen && setEditingTransaction(null)}>
+      {/* Edit Transaction Dialog */}
+      <Dialog open={!!editingTransaction && !isEditingImage} onOpenChange={(isOpen) => { if (!isOpen) { setEditingTransaction(null) }}}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Transaction</DialogTitle>
@@ -229,6 +315,54 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
               <Button type="submit">Save Changes</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Image Dialog */}
+      <Dialog open={isEditingImage} onOpenChange={(isOpen) => { if (!isOpen) { setIsEditingImage(false); setEditingTransaction(null) }}}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Bill Image</DialogTitle>
+          </DialogHeader>
+           <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div className="space-y-2">
+                    <Label>Bill Image</Label>
+                    {editForm.imagePreview ? (
+                        <div className="relative w-full h-64">
+                            <Image src={editForm.imagePreview} alt="Bill preview" layout="fill" objectFit="contain" className="rounded-md" />
+                            <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 rounded-full" onClick={handleRemoveImagePreview}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="relative">
+                            <Input id="image-upload-edit" type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleImageChange} accept="image/*" />
+                            <label htmlFor="image-upload-edit" className="flex items-center justify-center w-full h-24 border-2 border-dashed rounded-md cursor-pointer hover:bg-muted">
+                                <div className="text-center">
+                                    <Paperclip className="mx-auto h-6 w-6 text-muted-foreground" />
+                                    <p className="mt-1 text-sm text-muted-foreground">Click to upload a new image</p>
+                                </div>
+                            </label>
+                        </div>
+                    )}
+                </div>
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => { setIsEditingImage(false); setEditingTransaction(null); }}>Cancel</Button>
+                    <Button type="submit">Save Image</Button>
+                </DialogFooter>
+           </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Image Viewer Dialog */}
+      <Dialog open={isImageViewerOpen} onOpenChange={setIsImageViewerOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Bill/Receipt</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4 relative w-full aspect-video">
+            {viewingImage && <Image src={viewingImage} alt="Bill" layout="fill" objectFit="contain" />}
+          </div>
         </DialogContent>
       </Dialog>
     </>

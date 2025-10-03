@@ -1,5 +1,10 @@
+
 import { z } from "zod";
 import { EXPENSE_CATEGORIES } from "./constants";
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
 
 export const transactionSchema = z.object({
   type: z.enum(["income", "expense"], {
@@ -12,6 +17,14 @@ export const transactionSchema = z.object({
   date: z.date({
     required_error: "A date is required.",
   }),
+  image: z
+    .any()
+    .refine((file) => !file || file.size <= MAX_FILE_SIZE, `Max image size is 5MB.`)
+    .refine(
+      (file) => !file || ACCEPTED_IMAGE_TYPES.includes(file.type),
+      "Only .jpg, .jpeg, .png and .webp formats are supported."
+    ).optional(),
+  imageUrl: z.string().optional(),
 }).refine(data => {
     if (data.type === 'expense') {
         return !!data.category && EXPENSE_CATEGORIES.includes(data.category);

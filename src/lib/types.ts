@@ -8,6 +8,7 @@ export type Transaction = {
   description: string;
   paymentMethod: string;
   userId?: string;
+  imageUrl?: string;
 };
 
 export type User = {

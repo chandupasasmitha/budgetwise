@@ -1,9 +1,10 @@
+
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { PlusCircle, CalendarIcon, Loader2 } from "lucide-react";
+import { PlusCircle, CalendarIcon, Loader2, Paperclip, X } from "lucide-react";
 import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import Image from "next/image";
 
 interface AddTransactionSheetProps {
   bookId: string;
@@ -74,6 +76,8 @@ function AddTransactionSheet({ bookId, onTransactionAdded }: AddTransactionSheet
   const [paymentMethods, setPaymentMethods] = useState<{ id: string, name: string }[]>([]);
   const [isAddPaymentMethodOpen, setIsAddPaymentMethodOpen] = useState(false);
   const [newPaymentMethod, setNewPaymentMethod] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
@@ -84,6 +88,7 @@ function AddTransactionSheet({ bookId, onTransactionAdded }: AddTransactionSheet
       category: "",
       date: new Date(),
       paymentMethod: "",
+      image: undefined,
     },
   });
 
@@ -128,8 +133,45 @@ function AddTransactionSheet({ bookId, onTransactionAdded }: AddTransactionSheet
     try {
       if (!user) throw new Error("User not logged in");
       if (!bookId) throw new Error("No cash book selected");
+      setIsUploading(true);
 
-      await addDoc(collection(db, "transactions"), {
+      let imageUrl: string | undefined = undefined;
+
+      if (data.image) {
+        const reader = new FileReader();
+        reader.readAsDataURL(data.image);
+        reader.onloadend = async () => {
+          const base64Image = reader.result;
+
+          const response = await fetch("/api/upload-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: base64Image }),
+          });
+          const result = await response.json();
+          if (!result.success) {
+            throw new Error(result.error || "Image upload failed");
+          }
+          imageUrl = result.url;
+          await saveTransaction(data, imageUrl);
+        };
+      } else {
+        await saveTransaction(data);
+      }
+
+    } catch (error: any) {
+      setIsUploading(false);
+      toast({
+        variant: "destructive",
+        title: "Error saving transaction",
+        description: error.message || "Failed to save transaction.",
+      });
+    }
+  };
+
+  const saveTransaction = async (data: TransactionFormData, imageUrl?: string) => {
+    if (!user) return;
+     await addDoc(collection(db, "transactions"), {
         type: data.type,
         description: data.description,
         amount: data.amount,
@@ -139,6 +181,7 @@ function AddTransactionSheet({ bookId, onTransactionAdded }: AddTransactionSheet
         createdAt: Timestamp.now(),
         userId: user.uid,
         bookId: bookId,
+        imageUrl: imageUrl || null,
       });
 
       toast({
@@ -149,15 +192,10 @@ function AddTransactionSheet({ bookId, onTransactionAdded }: AddTransactionSheet
       onTransactionAdded?.();
       form.reset();
       setSuggestedCategories([]);
+      setImagePreview(null);
       setIsOpen(false);
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error saving transaction",
-        description: error.message || "Failed to save transaction.",
-      });
-    }
-  };
+      setIsUploading(false);
+  }
 
   const handleSuggestCategory = () => {
     const description = form.getValues("description");
@@ -174,6 +212,23 @@ function AddTransactionSheet({ bookId, onTransactionAdded }: AddTransactionSheet
       const categories = await suggestCategoriesAction(description);
       setSuggestedCategories(categories);
     });
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      form.setValue("image", file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    form.setValue("image", undefined);
+    setImagePreview(null);
   };
 
   return (
@@ -376,6 +431,39 @@ function AddTransactionSheet({ bookId, onTransactionAdded }: AddTransactionSheet
                     )}
                   />
 
+                  {transactionType === 'expense' && (
+                    <FormField
+                      control={form.control}
+                      name="image"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Attach Bill (Optional)</FormLabel>
+                          {imagePreview ? (
+                            <div className="relative w-32 h-32">
+                              <Image src={imagePreview} alt="Bill preview" layout="fill" objectFit="cover" className="rounded-md" />
+                              <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 rounded-full" onClick={handleRemoveImage}>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <FormControl>
+                               <div className="relative">
+                                  <Input id="image-upload" type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleImageChange} accept="image/*" />
+                                  <label htmlFor="image-upload" className="flex items-center justify-center w-full h-24 border-2 border-dashed rounded-md cursor-pointer hover:bg-muted">
+                                    <div className="text-center">
+                                      <Paperclip className="mx-auto h-6 w-6 text-muted-foreground" />
+                                      <p className="mt-1 text-sm text-muted-foreground">Click to upload a file</p>
+                                    </div>
+                                  </label>
+                                </div>
+                            </FormControl>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
                   <FormField
                     control={form.control}
                     name="date"
@@ -425,7 +513,10 @@ function AddTransactionSheet({ bookId, onTransactionAdded }: AddTransactionSheet
                     Cancel
                   </Button>
                 </SheetClose>
-                <Button type="submit">Save Transaction</Button>
+                <Button type="submit" disabled={isUploading}>
+                  {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save Transaction
+                </Button>
               </SheetFooter>
             </form>
           </Form>
@@ -454,3 +545,4 @@ function AddTransactionSheet({ bookId, onTransactionAdded }: AddTransactionSheet
 }
 
 export default AddTransactionSheet;
+
