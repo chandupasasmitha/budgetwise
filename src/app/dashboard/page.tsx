@@ -133,7 +133,7 @@ const Dashboard = ({
                   (book.balance ?? 0) >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
-                ${(book.balance ?? 0).toLocaleString()}
+                Rs. {(book.balance ?? 0).toLocaleString()}
               </span>
             </p>
           ) : (
@@ -144,7 +144,7 @@ const Dashboard = ({
               <p>
                 <span className="font-medium text-foreground">Income:</span>
                 <span className="ml-1 text-green-500">
-                  ${(book.income ?? 0).toLocaleString()}
+                  Rs. {(book.income ?? 0).toLocaleString()}
                 </span>
               </p>
             ) : (
@@ -154,7 +154,7 @@ const Dashboard = ({
               <p>
                 <span className="font-medium text-foreground">Expenses:</span>
                 <span className="ml-1 text-red-500">
-                  ${(book.expenses ?? 0).toLocaleString()}
+                  Rs. {(book.expenses ?? 0).toLocaleString()}
                 </span>
               </p>
             ) : (
@@ -302,7 +302,7 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
                 (book.balance ?? 0) >= 0 ? "text-green-600" : "text-red-600"
               }
             >
-              ${(book.balance ?? 0).toLocaleString()}
+              Rs. {(book.balance ?? 0).toLocaleString()}
             </span>
           </div>
         )}
@@ -513,3 +513,4 @@ export default function DashboardPage() {
     
 
     
+

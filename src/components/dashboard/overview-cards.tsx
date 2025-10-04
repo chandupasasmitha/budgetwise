@@ -44,7 +44,7 @@ export default function OverviewCards({ transactions, showBalance, showIncome, s
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalSpent.toFixed(2)}</div>
+            <div className="text-2xl font-bold">Rs. {totalSpent.toFixed(2)}</div>
           </CardContent>
         </Card>
       )}
@@ -55,7 +55,7 @@ export default function OverviewCards({ transactions, showBalance, showIncome, s
             <PiggyBank className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalIncome.toFixed(2)}</div>
+            <div className="text-2xl font-bold">Rs. {totalIncome.toFixed(2)}</div>
           </CardContent>
         </Card>
       )}
@@ -69,7 +69,7 @@ export default function OverviewCards({ transactions, showBalance, showIncome, s
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${remainingBudget.toFixed(2)}
+              Rs. {remainingBudget.toFixed(2)}
             </div>
           </CardContent>
         </Card>

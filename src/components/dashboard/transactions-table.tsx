@@ -286,7 +286,7 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
                             "text-right font-medium",
                             transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                         )}>
-                            {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                            {transaction.type === 'income' ? '+' : '-'}Rs. {transaction.amount.toFixed(2)}
                         </TableCell>
                         <TableCell>
                             <DropdownMenu>
@@ -468,15 +468,17 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
             {viewingTransaction?.imageUrl && <Image src={viewingTransaction.imageUrl} alt="Bill" layout="fill" objectFit="contain" />}
           </div>
            {viewingTransaction && (
-            <DialogFooter className="mt-4">
-                <Button variant="outline" onClick={() => {
-                    setIsImageViewerOpen(false);
-                    handleImageEdit(viewingTransaction);
-                }}>Edit</Button>
-                <Button variant="destructive" onClick={() => handleDeleteImage(viewingTransaction)} disabled={isSubmitting}>
-                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Delete
-                </Button>
+            <DialogFooter className="mt-4 sm:justify-between">
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => {
+                        setIsImageViewerOpen(false);
+                        handleImageEdit(viewingTransaction);
+                    }}>Edit</Button>
+                    <Button variant="destructive" onClick={() => handleDeleteImage(viewingTransaction)} disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Delete
+                    </Button>
+                </div>
                  <DialogClose asChild>
                     <Button type="button" className="sm:ml-auto">Close</Button>
                  </DialogClose>
