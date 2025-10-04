@@ -1,6 +1,6 @@
 
 import { db } from "@/lib/firebase";
-import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, arrayUnion, getDoc, or, arrayRemove } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, arrayUnion, getDoc, or, arrayRemove, setDoc } from "firebase/firestore";
 import type { Transaction, Collaborator } from "./types";
 import type { CollaboratorRole } from "@/components/dashboard/manage-collaborators-dialog";
 
@@ -117,7 +117,7 @@ export async function getTransactionsForBook(bookId: string): Promise<Transactio
       const usersQuery = query(collection(db, "users"), where("uid", "in", userIds));
       const usersSnapshot = await getDocs(usersQuery);
       usersSnapshot.forEach(doc => {
-          users[doc.id] = doc.data() as { email: string };
+          users[doc.data().uid] = doc.data() as { email: string };
       });
   }
   
