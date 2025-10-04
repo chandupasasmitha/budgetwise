@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -47,7 +48,7 @@ export default function CategoryPieChart({ expenses }: CategoryPieChartProps) {
       config={chartConfig}
       className="min-h-[200px] w-full aspect-square"
     >
-      <ResponsiveContainer width="100%" height={250}>
+      <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Tooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
           <Pie
