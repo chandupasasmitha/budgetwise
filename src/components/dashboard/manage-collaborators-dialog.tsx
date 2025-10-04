@@ -121,7 +121,7 @@ export default function ManageCollaboratorsDialog({ book, isOpen, onClose, onCol
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-6">
-          <div className="py-4 space-y-4">
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email address</Label>
               <Input
@@ -148,10 +148,10 @@ export default function ManageCollaboratorsDialog({ book, isOpen, onClose, onCol
 
             {book.collaborators && book.collaborators.length > 0 && (
                 <>
-                    <Separator />
+                    <Separator className="my-4" />
                     <div className="space-y-4">
                         <h3 className="text-sm font-medium text-muted-foreground">Existing Collaborators</h3>
-                        <ScrollArea className="max-h-60 pr-4">
+                        <ScrollArea className="h-60 pr-4">
                             <div className="space-y-4">
                                 {book.collaborators.map((c, index) => (
                                     <div key={`${c.email}-${index}`} className="p-3 border rounded-md">
@@ -193,7 +193,7 @@ export default function ManageCollaboratorsDialog({ book, isOpen, onClose, onCol
           </div>
         </div>
         
-        <DialogFooter className="p-6 pt-4 border-t">
+        <DialogFooter className="p-6 pt-4 border-t mt-4">
           <Button variant="outline" onClick={onClose}>
             Done
           </Button>

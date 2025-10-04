@@ -87,6 +87,7 @@ interface DashboardProps {
   sharedBooks: Book[];
   currentUserId: string | undefined;
   onRefreshBooks: () => Promise<void>;
+  books: Book[];
 }
 const Dashboard = ({
   onSelectBook,
@@ -95,6 +96,7 @@ const Dashboard = ({
   sharedBooks,
   currentUserId,
   onRefreshBooks,
+  books,
 }: DashboardProps) => {
   const [collaboratorsModalBook, setCollaboratorsModalBook] =
     useState<Book | null>(null);
@@ -103,61 +105,92 @@ const Dashboard = ({
     e.stopPropagation(); // Prevent card click event
     setCollaboratorsModalBook(book);
   };
+  
+  const handleCollaboratorsUpdate = async () => {
+    await onRefreshBooks();
+    if (collaboratorsModalBook) {
+        const updatedBook = books.find(b => b.id === collaboratorsModalBook.id);
+        if (updatedBook) {
+            setCollaboratorsModalBook(updatedBook);
+        } else {
+            setCollaboratorsModalBook(null); // Book might have been deleted
+        }
+    }
+};
 
-  const BookCard = ({ book }: { book: Book }) => (
-    <div
-      onClick={() => onSelectBook(book)}
-      className="p-6 transition-transform transform bg-card rounded-xl shadow-sm cursor-pointer hover:scale-[1.02] hover:shadow-lg flex flex-col justify-between"
-    >
-      <div>
-        <h2 className="mb-2 text-xl font-semibold text-card-foreground">
-          {book.name}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">Balance:</span>
-          <span
-            className={`ml-2 font-bold ${
-              (book.balance ?? 0) >= 0 ? "text-green-600" : "text-red-600"
-            }`}
-          >
-            ${(book.balance ?? 0).toLocaleString()}
-          </span>
-        </p>
-        <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
-          <p>
-            <span className="font-medium text-foreground">Income:</span>
-            <span className="ml-1 text-green-500">
-              ${(book.income ?? 0).toLocaleString()}
+  const BookCard = ({ book }: { book: Book }) => {
+    const isOwner = book.ownerId === currentUserId;
+    const canViewBalance = isOwner || book.visibilitySettings?.balance !== false;
+    const canViewIncome = isOwner || book.visibilitySettings?.income !== false;
+    const canViewExpenses = isOwner || book.visibilitySettings?.expenses !== false;
+
+    return (
+      <div
+        onClick={() => onSelectBook(book)}
+        className="p-6 transition-transform transform bg-card rounded-xl shadow-sm cursor-pointer hover:scale-[1.02] hover:shadow-lg flex flex-col justify-between"
+      >
+        <div>
+          <h2 className="mb-2 text-xl font-semibold text-card-foreground">
+            {book.name}
+          </h2>
+          {canViewBalance ? (
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Balance:</span>
+              <span
+                className={`ml-2 font-bold ${
+                  (book.balance ?? 0) >= 0 ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                ${(book.balance ?? 0).toLocaleString()}
+              </span>
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">Balance hidden</p>
+          )}
+          <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+            {canViewIncome ? (
+              <p>
+                <span className="font-medium text-foreground">Income:</span>
+                <span className="ml-1 text-green-500">
+                  ${(book.income ?? 0).toLocaleString()}
+                </span>
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">Income hidden</p>
+            )}
+            {canViewExpenses ? (
+              <p>
+                <span className="font-medium text-foreground">Expenses:</span>
+                <span className="ml-1 text-red-500">
+                  ${(book.expenses ?? 0).toLocaleString()}
+                </span>
+              </p>
+            ) : (
+               <p className="text-sm text-muted-foreground italic">Expenses hidden</p>
+            )}
+          </div>
+        </div>
+        <div className="mt-4 pt-4 border-t flex justify-between items-center">
+          {book.ownerId !== currentUserId && book.ownerEmail && (
+            <span className="text-xs text-muted-foreground">
+              Owner: {book.ownerEmail}
             </span>
-          </p>
-          <p>
-            <span className="font-medium text-foreground">Expenses:</span>
-            <span className="ml-1 text-red-500">
-              ${(book.expenses ?? 0).toLocaleString()}
-            </span>
-          </p>
+          )}
+          <div className="flex-grow" />
+          {book.ownerId === currentUserId && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => handleOpenCollaborators(e, book)}
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Collaborators
+            </Button>
+          )}
         </div>
       </div>
-      <div className="mt-4 pt-4 border-t flex justify-between items-center">
-        {book.ownerId !== currentUserId && book.ownerEmail && (
-          <span className="text-xs text-muted-foreground">
-            Owner: {book.ownerEmail}
-          </span>
-        )}
-        <div className="flex-grow" />
-        {book.ownerId === currentUserId && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => handleOpenCollaborators(e, book)}
-          >
-            <Users className="w-4 h-4 mr-2" />
-            Collaborators
-          </Button>
-        )}
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <>
@@ -201,15 +234,7 @@ const Dashboard = ({
           book={collaboratorsModalBook}
           isOpen={!!collaboratorsModalBook}
           onClose={() => setCollaboratorsModalBook(null)}
-          onCollaboratorsUpdate={async () => {
-            await onRefreshBooks();
-            setCollaboratorsModalBook((prev) => {
-              if (!prev) return null;
-              // We need to find the updated book data from the refreshed list, but this component doesn't have it.
-              // For now, let's just close the dialog. A better solution would be to get the updated book list here.
-              return null;
-            });
-          }}
+          onCollaboratorsUpdate={handleCollaboratorsUpdate}
         />
       )}
     </>
@@ -258,20 +283,11 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
   const expenses = transactions.filter((t) => t.type === "expense");
 
   const showBalance =
-    isOwner ||
-    book.currentUserRole === "Full Access" ||
-    (book.currentUserRole === "Add Transactions Only" &&
-      book.visibilitySettings?.balance);
+    isOwner || book.visibilitySettings?.balance !== false;
   const showIncome =
-    isOwner ||
-    book.currentUserRole === "Full Access" ||
-    (book.currentUserRole === "Add Transactions Only" &&
-      book.visibilitySettings?.income);
+      isOwner || book.visibilitySettings?.income !== false;
   const showExpenses =
-    isOwner ||
-    book.currentUserRole === "Full Access" ||
-    (book.currentUserRole === "Add Transactions Only" &&
-      book.visibilitySettings?.expenses);
+      isOwner || book.visibilitySettings?.expenses !== false;
 
   return (
     <div className="flex-1 space-y-6">
@@ -301,6 +317,7 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <OverviewCards
               transactions={transactions}
+              showBalance={showBalance ?? false}
               showIncome={showIncome ?? false}
               showExpenses={showExpenses ?? false}
             />
@@ -333,6 +350,7 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
         bookId={book.id}
         isLoading={loading}
         onTransactionAdded={onTransactionAdded}
+        canAddTransaction={book.currentUserRole !== 'Full Access' && book.currentUserRole !== 'Owner'}
       />
     </div>
   );
@@ -484,6 +502,7 @@ export default function DashboardPage() {
           sharedBooks={sharedBooks}
           currentUserId={user?.uid}
           onRefreshBooks={fetchBooks}
+          books={books}
         />
       )}
       <NewBookModal

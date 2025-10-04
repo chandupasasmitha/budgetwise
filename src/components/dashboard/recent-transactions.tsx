@@ -16,9 +16,10 @@ interface RecentTransactionsProps {
   bookId: string;
   isLoading: boolean;
   onTransactionAdded?: () => void;
+  canAddTransaction?: boolean;
 }
 
-export default function RecentTransactions({ transactions, bookId, isLoading, onTransactionAdded }: RecentTransactionsProps) {
+export default function RecentTransactions({ transactions, bookId, isLoading, onTransactionAdded, canAddTransaction }: RecentTransactionsProps) {
   return (
     <Card>
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -28,7 +29,9 @@ export default function RecentTransactions({ transactions, bookId, isLoading, on
             Here are your most recent transactions.
           </CardDescription>
         </div>
-        <AddTransactionSheet bookId={bookId} onTransactionAdded={onTransactionAdded} />
+        {(canAddTransaction === undefined || canAddTransaction === true) && (
+            <AddTransactionSheet bookId={bookId} onTransactionAdded={onTransactionAdded} />
+        )}
       </CardHeader>
       <CardContent>
         {isLoading ? (

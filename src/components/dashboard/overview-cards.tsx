@@ -6,11 +6,12 @@ import type { Transaction } from "@/lib/types";
 
 interface OverviewCardsProps {
   transactions: Transaction[];
+  showBalance: boolean;
   showIncome: boolean;
   showExpenses: boolean;
 }
 
-export default function OverviewCards({ transactions, showIncome, showExpenses }: OverviewCardsProps) {
+export default function OverviewCards({ transactions, showBalance, showIncome, showExpenses }: OverviewCardsProps) {
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
@@ -58,7 +59,7 @@ export default function OverviewCards({ transactions, showIncome, showExpenses }
           </CardContent>
         </Card>
       )}
-      {showIncome && showExpenses && (
+      {showBalance && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
