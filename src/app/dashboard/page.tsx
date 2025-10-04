@@ -110,20 +110,6 @@ const Dashboard = ({
     }
   };
   
-  const handleCollaboratorsUpdate = async () => {
-    await onRefreshBooks();
-    if (collaboratorsModalBook) {
-        // Find the latest version of the book from the refreshed list
-        const updatedBook = books.find(b => b.id === collaboratorsModalBook.id);
-        if (updatedBook) {
-            setCollaboratorsModalBook(updatedBook);
-        } else {
-            // The book might have been removed or is no longer accessible
-            setCollaboratorsModalBook(null); 
-        }
-    }
-};
-
   const BookCard = ({ book }: { book: Book }) => {
     const isOwner = book.ownerId === currentUserId;
     const canViewBalance = isOwner || book.visibilitySettings?.balance !== false;
@@ -239,8 +225,10 @@ const Dashboard = ({
         <ManageCollaboratorsDialog
           book={collaboratorsModalBook}
           isOpen={!!collaboratorsModalBook}
-          onClose={() => setCollaboratorsModalBook(null)}
-          onCollaboratorsUpdate={handleCollaboratorsUpdate}
+          onClose={() => {
+            setCollaboratorsModalBook(null);
+            onRefreshBooks(); // Refresh data when the dialog is closed
+          }}
         />
       )}
     </>
@@ -523,3 +511,5 @@ export default function DashboardPage() {
     </>
   );
 }
+
+    

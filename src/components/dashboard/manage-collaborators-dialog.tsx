@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,16 +27,28 @@ interface ManageCollaboratorsDialogProps {
   book: { id: string; name: string, collaborators: Collaborator[] };
   isOpen: boolean;
   onClose: () => void;
-  onCollaboratorsUpdate: () => void;
 }
 
 export type CollaboratorRole = "Full Access" | "Add Transactions Only";
 
-export default function ManageCollaboratorsDialog({ book, isOpen, onClose, onCollaboratorsUpdate }: ManageCollaboratorsDialogProps) {
+export default function ManageCollaboratorsDialog({ book: initialBook, isOpen, onClose }: ManageCollaboratorsDialogProps) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<CollaboratorRole>("Add Transactions Only");
   const { user } = useAuth();
   const { toast } = useToast();
+  // Internal state to manage collaborators without causing a full page refresh
+  const [book, setBook] = useState(initialBook);
+
+  useEffect(() => {
+    setBook(initialBook);
+  }, [initialBook]);
+
+
+  const handleCollaboratorsUpdate = () => {
+    // This function will now be called to refresh the dialog's internal state
+    const updatedCollaborators = book.collaborators.map(c => ({...c}));
+    setBook(prevBook => ({...prevBook, collaborators: updatedCollaborators}));
+  };
 
   const handleInvite = async () => {
     if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email)) {
@@ -48,7 +60,7 @@ export default function ManageCollaboratorsDialog({ book, isOpen, onClose, onCol
       return;
     }
     try {
-      await addCollaborator(book.id, email, role);
+      const newCollaborator = await addCollaborator(book.id, email, role);
 
       await fetch("/api/send-invitation", {
         method: "POST",
@@ -66,7 +78,9 @@ export default function ManageCollaboratorsDialog({ book, isOpen, onClose, onCol
         description: `${email} has been invited to ${book.name}.`,
       });
       setEmail("");
-      onCollaboratorsUpdate();
+      // Update internal state
+      setBook(prevBook => ({...prevBook, collaborators: [...prevBook.collaborators, newCollaborator]}));
+
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -79,7 +93,17 @@ export default function ManageCollaboratorsDialog({ book, isOpen, onClose, onCol
   const handlePermissionChange = async (collaboratorEmail: string, permission: 'balance' | 'income' | 'expenses', value: boolean) => {
     try {
       await updateCollaboratorPermissions(book.id, collaboratorEmail, permission, value);
-      onCollaboratorsUpdate();
+      
+      // Optimistically update the internal state
+      setBook(prevBook => ({
+          ...prevBook,
+          collaborators: prevBook.collaborators.map(c => 
+              c.email.toLowerCase() === collaboratorEmail.toLowerCase()
+              ? { ...c, visibility: { ...c.visibility, [permission]: value } }
+              : c
+          )
+      }));
+
       toast({
         title: "Permissions Updated",
         description: `Visibility settings for ${collaboratorEmail} have been updated.`
@@ -96,7 +120,13 @@ export default function ManageCollaboratorsDialog({ book, isOpen, onClose, onCol
   const handleRemoveCollaborator = async (collaboratorEmail: string) => {
       try {
           await removeCollaborator(book.id, collaboratorEmail);
-          onCollaboratorsUpdate();
+          
+          // Update internal state
+          setBook(prevBook => ({
+              ...prevBook,
+              collaborators: prevBook.collaborators.filter(c => c.email.toLowerCase() !== collaboratorEmail.toLowerCase())
+          }));
+
           toast({
               title: "Collaborator Removed",
               description: `${collaboratorEmail} has been removed from the cash book.`
@@ -202,3 +232,5 @@ export default function ManageCollaboratorsDialog({ book, isOpen, onClose, onCol
     </Dialog>
   );
 }
+
+    

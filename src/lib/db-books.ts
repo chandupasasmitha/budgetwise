@@ -176,6 +176,7 @@ export async function addCollaborator(bookId: string, email: string, role: Colla
   await updateDoc(bookRef, {
     collaborators: arrayUnion(newCollaborator)
   });
+  return newCollaborator;
 }
 
 export async function acceptInvitation(bookId: string, email: string): Promise<boolean> {
@@ -228,7 +229,7 @@ export async function updateCollaboratorPermissions(bookId: string, collaborator
             return {
                 ...c,
                 visibility: {
-                    ...c.visibility,
+                    ...(c.visibility || {balance: true, income: true, expenses: true}),
                     [permission]: value
                 }
             };
@@ -280,3 +281,5 @@ export async function storeUser(user: { uid: string, email: string | null, displ
         });
     }
 }
+
+    
