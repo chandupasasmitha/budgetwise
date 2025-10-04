@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithRedirect } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import {
@@ -72,17 +72,16 @@ export function LoginForm() {
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      await storeUser(result.user);
-      router.push('/dashboard');
+      // We use signInWithRedirect which doesn't resolve here.
+      // The result is handled on the page load after redirect.
+      await signInWithRedirect(auth, googleProvider);
     } catch (error: any) {
        toast({
         variant: 'destructive',
         title: 'Google login failed',
         description: error.message,
       });
-    } finally {
-        setIsGoogleLoading(false);
+      setIsGoogleLoading(false);
     }
   }
 
