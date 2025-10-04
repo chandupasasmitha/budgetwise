@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { addCollaborator, updateCollaboratorPermissions, removeCollaborator } from "@/lib/db-books";
 import { useAuth } from "@/hooks/use-auth";
 import type { Collaborator } from "@/lib/types";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ManageCollaboratorsDialogProps {
@@ -34,6 +34,7 @@ export type CollaboratorRole = "Full Access" | "Add Transactions Only";
 export default function ManageCollaboratorsDialog({ book: initialBook, isOpen, onClose }: ManageCollaboratorsDialogProps) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<CollaboratorRole>("Add Transactions Only");
+  const [isInviting, setIsInviting] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   // Internal state to manage collaborators without causing a full page refresh
@@ -59,6 +60,7 @@ export default function ManageCollaboratorsDialog({ book: initialBook, isOpen, o
       });
       return;
     }
+    setIsInviting(true);
     try {
       const newCollaborator = await addCollaborator(book.id, email, role);
 
@@ -87,6 +89,8 @@ export default function ManageCollaboratorsDialog({ book: initialBook, isOpen, o
         title: "Error",
         description: error.message || "Failed to send invitation.",
       });
+    } finally {
+        setIsInviting(false);
     }
   };
 
@@ -174,7 +178,10 @@ export default function ManageCollaboratorsDialog({ book: initialBook, isOpen, o
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={handleInvite} className="w-full">Send Invitation</Button>
+            <Button onClick={handleInvite} className="w-full" disabled={isInviting}>
+              {isInviting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Send Invitation
+            </Button>
 
             {book.collaborators && book.collaborators.length > 0 && (
                 <>
@@ -232,5 +239,3 @@ export default function ManageCollaboratorsDialog({ book: initialBook, isOpen, o
     </Dialog>
   );
 }
-
-    
