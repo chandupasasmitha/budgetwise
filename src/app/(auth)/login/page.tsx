@@ -21,7 +21,8 @@ export default function LoginPage() {
         const result = await getRedirectResult(auth);
         if (result && result.user) {
           // User has successfully signed in.
-          await storeUser(result.user);
+          const { uid, email, displayName } = result.user;
+          await storeUser({ uid, email, displayName });
           toast({ title: "Login Successful", description: "Redirecting to your dashboard..." });
           router.push('/dashboard');
           // No need to set isProcessing to false, as we are navigating away
@@ -56,3 +57,4 @@ export default function LoginPage() {
 
   return <LoginForm />;
 }
+
