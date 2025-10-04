@@ -171,7 +171,7 @@ function AddTransactionSheet({ bookId, onTransactionAdded }: AddTransactionSheet
   };
 
   const saveTransaction = async (data: TransactionFormData, imageUrl?: string) => {
-    if (!user) return;
+    if (!user || !db) return;
      await addDoc(collection(db, "transactions"), {
         type: data.type,
         description: data.description,

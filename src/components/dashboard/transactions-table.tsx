@@ -70,6 +70,7 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
   });
 
   const handleDelete = async (id: string) => {
+    if (!db) return;
     await deleteDoc(doc(db, "transactions", id));
     onTransactionChange?.();
   };
@@ -137,7 +138,7 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
   };
   
   const updateTransaction = async (imageUrl?: string | null) => {
-    if (!editingTransaction) return;
+    if (!editingTransaction || !db) return;
 
      await updateDoc(doc(db, "transactions", editingTransaction.id), {
       description: editForm.description,
@@ -169,7 +170,7 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
   }
 
   const handleDeleteImage = async (transaction: Transaction) => {
-    if (!transaction.imageUrl) return;
+    if (!transaction.imageUrl || !db) return;
     setIsSubmitting(true);
     try {
         const response = await fetch("/api/delete-image", {
@@ -462,7 +463,7 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
             {viewingTransaction?.imageUrl && <Image src={viewingTransaction.imageUrl} alt="Bill" layout="fill" objectFit="contain" />}
           </div>
            {viewingTransaction && (
-            <DialogFooter className="mt-4">
+            <DialogFooter className="mt-4 sm:justify-start">
                 <Button variant="outline" onClick={() => {
                     setIsImageViewerOpen(false);
                     handleImageEdit(viewingTransaction);
@@ -483,5 +484,3 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
 }
 
 export default TransactionsTable;
-
-    

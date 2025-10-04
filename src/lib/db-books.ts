@@ -4,7 +4,17 @@ import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, a
 import type { Transaction, Collaborator } from "./types";
 import type { CollaboratorRole } from "@/components/dashboard/manage-collaborators-dialog";
 
+// Helper function to ensure db is initialized
+function getDb() {
+    if (!db) {
+        throw new Error("Firestore is not initialized. This function should only be called on the client.");
+    }
+    return db;
+}
+
+
 export async function createBook({ name, ownerId, ownerEmail }: { name: string; ownerId: string; ownerEmail: string }) {
+  const db = getDb();
   const docRef = await addDoc(collection(db, "books"), {
     name,
     ownerId,
@@ -16,6 +26,7 @@ export async function createBook({ name, ownerId, ownerEmail }: { name: string; 
 }
 
 export async function getBooks(userId: string, userEmail: string) {
+    const db = getDb();
     if (!userEmail) return [];
     
     const lowercasedEmail = userEmail.toLowerCase();
@@ -24,15 +35,17 @@ export async function getBooks(userId: string, userEmail: string) {
       collection(db, 'books'),
       or(
         where('ownerId', '==', userId),
-        where('collaborators', 'array-contains', { email: lowercasedEmail, status: 'accepted', role: 'Full Access' }),
-        where('collaborators', 'array-contains', { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: true, expenses: true} }),
-        where('collaborators', 'array-contains', { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: true, expenses: false} }),
-        where('collaborators', 'array-contains', { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: false, expenses: true} }),
-        where('collaborators', 'array-contains', { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: false, expenses: false} }),
-        where('collaborators', 'array-contains', { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: true, expenses: true} }),
-        where('collaborators', 'array-contains', { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: true, expenses: false} }),
-        where('collaborators', 'array-contains', { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: false, expenses: true} }),
-        where('collaborators', 'array-contains', { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: false, expenses: false} })
+        where('collaborators', 'array-contains-any', [
+            { email: lowercasedEmail, status: 'accepted', role: 'Full Access' },
+            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: true, expenses: true } },
+            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: true, expenses: false } },
+            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: false, expenses: true } },
+            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: false, expenses: false } },
+            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: true, expenses: true } },
+            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: true, expenses: false } },
+            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: false, expenses: true } },
+            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: false, expenses: false } }
+        ])
       )
     );
 
@@ -105,6 +118,7 @@ export async function getBooks(userId: string, userEmail: string) {
 }
 
 export async function getTransactionsForBook(bookId: string): Promise<Transaction[]> {
+  const db = getDb();
   const transactionsQuery = query(
     collection(db, "transactions"), 
     where("bookId", "==", bookId)
@@ -115,7 +129,7 @@ export async function getTransactionsForBook(bookId: string): Promise<Transactio
     return [];
   }
 
-  const userIds = [...new Set(transactionsSnapshot.docs.map(doc => doc.data().userId))];
+  const userIds = [...new Set(transactionsSnapshot.docs.map(doc => doc.data().userId).filter(Boolean))];
 
   const users: Record<string, { email: string }> = {};
   if (userIds.length > 0) {
@@ -147,12 +161,14 @@ export async function getTransactionsForBook(bookId: string): Promise<Transactio
 }
 
 export async function getPaymentMethods(userId: string) {
+    const db = getDb();
     const q = query(collection(db, "paymentMethods"), where("userId", "==", userId));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as {id: string, name: string}[];
 }
 
 export async function addPaymentMethod({ name, userId }: { name: string; userId: string }) {
+    const db = getDb();
     const docRef = await addDoc(collection(db, "paymentMethods"), {
         name,
         userId,
@@ -162,6 +178,7 @@ export async function addPaymentMethod({ name, userId }: { name: string; userId:
 }
 
 export async function addCollaborator(bookId: string, email: string, role: CollaboratorRole) {
+  const db = getDb();
   const bookRef = doc(db, "books", bookId);
   const bookSnap = await getDoc(bookRef);
   if (!bookSnap.exists()) throw new Error("Book not found");
@@ -188,6 +205,7 @@ export async function addCollaborator(bookId: string, email: string, role: Colla
 }
 
 export async function acceptInvitation(bookId: string, email: string): Promise<boolean> {
+  const db = getDb();
   const bookRef = doc(db, "books", bookId);
   const bookSnap = await getDoc(bookRef);
 
@@ -224,6 +242,7 @@ export async function acceptInvitation(bookId: string, email: string): Promise<b
 }
 
 export async function updateCollaboratorPermissions(bookId: string, collaboratorEmail: string, permission: 'balance' | 'income' | 'expenses', value: boolean) {
+    const db = getDb();
     const bookRef = doc(db, "books", bookId);
     const bookSnap = await getDoc(bookRef);
 
@@ -249,6 +268,7 @@ export async function updateCollaboratorPermissions(bookId: string, collaborator
 }
 
 export async function removeCollaborator(bookId: string, collaboratorEmail: string) {
+    const db = getDb();
     const bookRef = doc(db, "books", bookId);
     const bookSnap = await getDoc(bookRef);
 
@@ -278,6 +298,7 @@ export async function removeCollaborator(bookId: string, collaboratorEmail: stri
 
 export async function storeUser(user: { uid: string, email: string | null, displayName?: string | null }) {
     if (!user.email) return;
+    const db = getDb();
     const userRef = doc(db, 'users', user.uid);
     const userSnap = await getDoc(userRef);
 
