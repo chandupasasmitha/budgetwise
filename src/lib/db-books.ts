@@ -24,7 +24,15 @@ export async function getBooks(userId: string, userEmail: string) {
       collection(db, 'books'),
       or(
         where('ownerId', '==', userId),
-        where('collaborators.email', '==', lowercasedEmail)
+        where('collaborators', 'array-contains', { email: lowercasedEmail, status: 'accepted', role: 'Full Access' }),
+        where('collaborators', 'array-contains', { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: true, expenses: true} }),
+        where('collaborators', 'array-contains', { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: true, expenses: false} }),
+        where('collaborators', 'array-contains', { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: false, expenses: true} }),
+        where('collaborators', 'array-contains', { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: false, expenses: false} }),
+        where('collaborators', 'array-contains', { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: true, expenses: true} }),
+        where('collaborators', 'array-contains', { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: true, expenses: false} }),
+        where('collaborators', 'array-contains', { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: false, expenses: true} }),
+        where('collaborators', 'array-contains', { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: false, expenses: false} })
       )
     );
 
@@ -281,5 +289,3 @@ export async function storeUser(user: { uid: string, email: string | null, displ
         });
     }
 }
-
-    
