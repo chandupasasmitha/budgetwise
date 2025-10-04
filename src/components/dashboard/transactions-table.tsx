@@ -462,7 +462,7 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
             {viewingTransaction?.imageUrl && <Image src={viewingTransaction.imageUrl} alt="Bill" layout="fill" objectFit="contain" />}
           </div>
            {viewingTransaction && (
-            <DialogFooter className="mt-4 sm:justify-start">
+            <DialogFooter className="mt-4">
                 <Button variant="outline" onClick={() => {
                     setIsImageViewerOpen(false);
                     handleImageEdit(viewingTransaction);
@@ -483,3 +483,5 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
 }
 
 export default TransactionsTable;
+
+    
