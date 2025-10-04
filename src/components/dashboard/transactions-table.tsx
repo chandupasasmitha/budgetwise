@@ -451,7 +451,12 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
         </DialogContent>
       </Dialog>
       
-      <Dialog open={isImageViewerOpen} onOpenChange={(isOpen) => { if (!isOpen) { setViewingTransaction(null) }}}>
+      <Dialog open={isImageViewerOpen} onOpenChange={(open) => {
+          if (!open) {
+              setIsImageViewerOpen(false);
+              setViewingTransaction(null);
+          }
+      }}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Bill/Receipt</DialogTitle>
@@ -463,7 +468,7 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
             {viewingTransaction?.imageUrl && <Image src={viewingTransaction.imageUrl} alt="Bill" layout="fill" objectFit="contain" />}
           </div>
            {viewingTransaction && (
-            <DialogFooter className="mt-4 sm:justify-start">
+            <DialogFooter className="mt-4">
                 <Button variant="outline" onClick={() => {
                     setIsImageViewerOpen(false);
                     handleImageEdit(viewingTransaction);
