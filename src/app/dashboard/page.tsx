@@ -282,6 +282,8 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
       isOwner || book.visibilitySettings?.income !== false;
   const showExpenses =
       isOwner || book.visibilitySettings?.expenses !== false;
+  
+  const canAddTransaction = book.currentUserRole === 'Owner' || book.currentUserRole === 'Full Access' || book.currentUserRole === 'Add Transactions Only';
 
   return (
     <div className="flex-1 space-y-6">
@@ -344,7 +346,7 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
         bookId={book.id}
         isLoading={loading}
         onTransactionAdded={onTransactionAdded}
-        canAddTransaction={book.currentUserRole !== 'Full Access' && book.currentUserRole !== 'Owner'}
+        canAddTransaction={canAddTransaction}
         ownerId={book.ownerId}
       />
     </div>
@@ -511,5 +513,7 @@ export default function DashboardPage() {
     </>
   );
 }
+
+    
 
     

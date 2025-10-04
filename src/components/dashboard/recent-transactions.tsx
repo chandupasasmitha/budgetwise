@@ -31,7 +31,7 @@ export default function RecentTransactions({ transactions, bookId, isLoading, on
             Here are your most recent transactions.
           </CardDescription>
         </div>
-        {(canAddTransaction === undefined || canAddTransaction === true) && (
+        {canAddTransaction && (
             <AddTransactionSheet bookId={bookId} onTransactionAdded={onTransactionAdded} />
         )}
       </CardHeader>
@@ -49,3 +49,5 @@ export default function RecentTransactions({ transactions, bookId, isLoading, on
     </Card>
   );
 }
+
+    
