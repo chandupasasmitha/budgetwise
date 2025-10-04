@@ -1,9 +1,10 @@
+
 'use client';
 
 import Link from 'next/link';
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { acceptInvitation } from '@/lib/db-books';
+import { acceptInvitation, storeUser } from '@/lib/db-books';
 
 function SignupFormComponent() {
   const searchParams = useSearchParams();
@@ -39,7 +40,14 @@ function SignupFormComponent() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Update user's profile with full name
+      await updateProfile(userCredential.user, { displayName: fullName });
+      
+      // Store user info in Firestore
+      await storeUser({ uid: userCredential.user.uid, email: userCredential.user.email, displayName: fullName });
+
       toast({
         title: "Account created",
         description: "You have been successfully signed up.",

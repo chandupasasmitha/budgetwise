@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
@@ -5,7 +6,7 @@ import OverviewCards from "@/components/dashboard/overview-cards";
 import CategoryPieChart from "@/components/dashboard/category-pie-chart";
 import SpendingTrendChart from "@/components/dashboard/spending-trend-chart";
 import RecentTransactions from "@/components/dashboard/recent-transactions";
-import { createBook, getBooks, getTransactionsForBook } from "@/lib/db-books";
+import { createBook, getBooks, getTransactionsForBook, storeUser } from "@/lib/db-books";
 import { useAuth } from "@/hooks/use-auth";
 import type { Collaborator, Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -103,17 +104,22 @@ const Dashboard = ({
 
   const handleOpenCollaborators = (e: React.MouseEvent, book: Book) => {
     e.stopPropagation(); // Prevent card click event
-    setCollaboratorsModalBook(book);
+    const fullBookDetails = books.find(b => b.id === book.id);
+    if (fullBookDetails) {
+        setCollaboratorsModalBook(fullBookDetails);
+    }
   };
   
   const handleCollaboratorsUpdate = async () => {
     await onRefreshBooks();
     if (collaboratorsModalBook) {
+        // Find the latest version of the book from the refreshed list
         const updatedBook = books.find(b => b.id === collaboratorsModalBook.id);
         if (updatedBook) {
             setCollaboratorsModalBook(updatedBook);
         } else {
-            setCollaboratorsModalBook(null); // Book might have been deleted
+            // The book might have been removed or is no longer accessible
+            setCollaboratorsModalBook(null); 
         }
     }
 };
@@ -351,6 +357,7 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
         isLoading={loading}
         onTransactionAdded={onTransactionAdded}
         canAddTransaction={book.currentUserRole !== 'Full Access' && book.currentUserRole !== 'Owner'}
+        ownerId={book.ownerId}
       />
     </div>
   );
@@ -400,8 +407,11 @@ export default function DashboardPage() {
   }, [user]);
 
   useEffect(() => {
-    fetchBooks();
-  }, [fetchBooks]);
+    if (user) {
+      storeUser(user);
+      fetchBooks();
+    }
+  }, [user, fetchBooks]);
 
   const handleRefreshData = useCallback(async () => {
     if (user && user.email) {
@@ -443,12 +453,12 @@ export default function DashboardPage() {
   }, [fetchBooks, selectedBook, user]);
 
   const handleCreateBook = async (bookName: string) => {
-    if (!user) return;
+    if (!user || !user.email) return;
     setIsLoading(true);
     await createBook({
       name: bookName,
       ownerId: user.uid,
-      ownerEmail: user.email || "N/A",
+      ownerEmail: user.email,
     });
     setIsNewBookModalOpen(false);
     await fetchBooks();

@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, Paperclip, X, Loader2 } from "lucide-react";
+import { MoreHorizontal, Paperclip, X, Loader2, UserSquare } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
@@ -42,13 +42,16 @@ import { useAuth } from "@/hooks/use-auth";
 import { getPaymentMethods } from "@/lib/db-books";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+
 
 type TransactionsTableProps = {
   transactions: Transaction[];
   onTransactionChange?: () => void;
+  ownerId?: string;
 };
 
-function TransactionsTable({ transactions, onTransactionChange }: TransactionsTableProps) {
+function TransactionsTable({ transactions, onTransactionChange, ownerId }: TransactionsTableProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -209,94 +212,110 @@ function TransactionsTable({ transactions, onTransactionChange }: TransactionsTa
   return (
     <>
       <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Description</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Payment Method</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead>
-                <span className="sr-only">Actions</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {transactions.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
-                  No transactions yet.
-                </TableCell>
-              </TableRow>
-            ) : (
-              transactions.map((transaction) => (
-                <TableRow key={transaction.id}>
-                  <TableCell>
-                    <div className="font-medium flex items-center gap-2">
-                        {transaction.description}
-                        {transaction.imageUrl && (
-                            <button onClick={() => handleViewImage(transaction)} className="text-muted-foreground hover:text-primary">
-                                <Paperclip className="h-4 w-4" />
-                            </button>
-                        )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {transaction.type === 'expense' ? (
-                      <Badge variant="outline">{transaction.category}</Badge>
-                    ) : (
-                      <Badge variant="secondary">Income</Badge>
-                    )}
-                  </TableCell>
-                   <TableCell>{transaction.paymentMethod}</TableCell>
-                   <TableCell>
-                    {format(transaction.date, "MMM d, yyyy")}
-                  </TableCell>
-                  <TableCell className={cn(
-                      "text-right font-medium",
-                      transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                  )}>
-                    {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEdit(transaction)}>
-                          Edit Transaction
-                        </DropdownMenuItem>
-                         {transaction.type === 'expense' && (
-                            <>
-                                <DropdownMenuSeparator />
-                                {transaction.imageUrl ? (
-                                    <>
-                                        <DropdownMenuItem onClick={() => handleImageEdit(transaction)}>Edit Bill</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleDeleteImage(transaction)}>Delete Bill</DropdownMenuItem>
-                                    </>
-                                ) : (
-                                    <DropdownMenuItem onClick={() => handleImageEdit(transaction)}>Add Bill</DropdownMenuItem>
-                                )}
-                           </>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(transaction.id)}>
-                          Delete Transaction
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+        <TooltipProvider>
+            <Table>
+            <TableHeader>
+                <TableRow>
+                <TableHead>Description</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Payment Method</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>
+                    <span className="sr-only">Actions</span>
+                </TableHead>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+                {transactions.length === 0 ? (
+                <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                    No transactions yet.
+                    </TableCell>
+                </TableRow>
+                ) : (
+                transactions.map((transaction) => {
+                    const isCollaboratorTx = ownerId && transaction.userId !== ownerId;
+                    return (
+                        <TableRow key={transaction.id} className={cn(isCollaboratorTx && "bg-blue-50 dark:bg-blue-950/50")}>
+                        <TableCell>
+                            <div className="font-medium flex items-center gap-2">
+                                {isCollaboratorTx ? (
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <UserSquare className="h-4 w-4 text-blue-500" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Added by: {transaction.userEmail}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                ) : null}
+
+                                {transaction.description}
+                                {transaction.imageUrl && (
+                                    <button onClick={() => handleViewImage(transaction)} className="text-muted-foreground hover:text-primary">
+                                        <Paperclip className="h-4 w-4" />
+                                    </button>
+                                )}
+                            </div>
+                        </TableCell>
+                        <TableCell>
+                            {transaction.type === 'expense' ? (
+                            <Badge variant="outline">{transaction.category}</Badge>
+                            ) : (
+                            <Badge variant="secondary">Income</Badge>
+                            )}
+                        </TableCell>
+                        <TableCell>{transaction.paymentMethod}</TableCell>
+                        <TableCell>
+                            {format(transaction.date, "MMM d, yyyy")}
+                        </TableCell>
+                        <TableCell className={cn(
+                            "text-right font-medium",
+                            transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                        )}>
+                            {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                            <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button aria-haspopup="true" size="icon" variant="ghost">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Toggle menu</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => handleEdit(transaction)}>
+                                Edit Transaction
+                                </DropdownMenuItem>
+                                {transaction.type === 'expense' && (
+                                    <>
+                                        <DropdownMenuSeparator />
+                                        {transaction.imageUrl ? (
+                                            <>
+                                                <DropdownMenuItem onClick={() => handleImageEdit(transaction)}>Edit Bill</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleDeleteImage(transaction)}>Delete Bill</DropdownMenuItem>
+                                            </>
+                                        ) : (
+                                            <DropdownMenuItem onClick={() => handleImageEdit(transaction)}>Add Bill</DropdownMenuItem>
+                                        )}
+                                </>
+                                )}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(transaction.id)}>
+                                Delete Transaction
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                            </DropdownMenu>
+                        </TableCell>
+                        </TableRow>
+                    )
+                })
+                )}
+            </TableBody>
+            </Table>
+        </TooltipProvider>
       </div>
       
       {/* Edit Transaction Dialog */}

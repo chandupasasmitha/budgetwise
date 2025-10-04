@@ -1,9 +1,11 @@
+
 "use client";
 
 import { createContext, useState, useEffect, ReactNode } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { usePathname, useRouter } from 'next/navigation';
+import { storeUser } from './db-books';
 
 interface AuthContextType {
   user: User | null;
@@ -23,7 +25,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+      if (user) {
+        setUser(user);
+        storeUser(user); // Store user info on auth state change
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     });
 

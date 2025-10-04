@@ -20,24 +20,24 @@ export async function getBooks(userId: string, userEmail: string) {
     
     const lowercasedEmail = userEmail.toLowerCase();
 
-    const combinedQuery = query(collection(db, "books"), or(
-        where("ownerId", "==", userId),
-        where("collaborators", "array-contains-any", [
-            { email: lowercasedEmail, status: 'accepted', role: 'Full Access' },
-            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: true, expenses: true } },
-            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: true, expenses: false } },
-            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: false, expenses: true } },
-            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: true, income: false, expenses: false } },
-            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: true, expenses: true } },
-            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: true, expenses: false } },
-            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: false, expenses: true } },
-            { email: lowercasedEmail, status: 'accepted', role: 'Add Transactions Only', visibility: { balance: false, income: false, expenses: false } },
-        ])
-    ));
+    const q = query(
+      collection(db, 'books'),
+      or(
+        where('ownerId', '==', userId),
+        where('collaborators.email', '==', lowercasedEmail)
+      )
+    );
 
-    const querySnapshot = await getDocs(combinedQuery);
+    const querySnapshot = await getDocs(q);
     
-    const booksData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const booksData = querySnapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(book => {
+          if (book.ownerId === userId) return true;
+          const collaborator = book.collaborators.find((c: any) => c.email.toLowerCase() === lowercasedEmail);
+          return collaborator && collaborator.status === 'accepted';
+      });
+
 
     if (booksData.length === 0) return [];
 
@@ -97,13 +97,34 @@ export async function getBooks(userId: string, userEmail: string) {
 }
 
 export async function getTransactionsForBook(bookId: string): Promise<Transaction[]> {
-  const q = query(
+  const transactionsQuery = query(
     collection(db, "transactions"), 
     where("bookId", "==", bookId)
   );
-  const snapshot = await getDocs(q);
-  const transactions = snapshot.docs.map(doc => {
+  const transactionsSnapshot = await getDocs(transactionsQuery);
+
+  if (transactionsSnapshot.empty) {
+    return [];
+  }
+
+  // Get all unique user IDs from transactions
+  const userIds = [...new Set(transactionsSnapshot.docs.map(doc => doc.data().userId))];
+
+  // Fetch user data for all user IDs
+  const users: Record<string, { email: string }> = {};
+  if (userIds.length > 0) {
+      // Note: Firestore 'in' query is limited to 30 items. For more users, you'd need multiple queries.
+      const usersQuery = query(collection(db, "users"), where("uid", "in", userIds));
+      const usersSnapshot = await getDocs(usersQuery);
+      usersSnapshot.forEach(doc => {
+          users[doc.id] = doc.data() as { email: string };
+      });
+  }
+  
+
+  const transactions = transactionsSnapshot.docs.map(doc => {
     const data = doc.data();
+    const userEmail = users[data.userId]?.email || 'Unknown User';
     return {
       id: doc.id,
       description: data.description,
@@ -112,10 +133,12 @@ export async function getTransactionsForBook(bookId: string): Promise<Transactio
       date: data.date.toDate(),
       type: data.type,
       paymentMethod: data.paymentMethod,
-      userId: data.userId, // Pass userId for filtering
+      userId: data.userId,
+      userEmail: userEmail,
       imageUrl: data.imageUrl,
     };
   });
+
   return transactions;
 }
 
@@ -151,7 +174,7 @@ export async function addCollaborator(bookId: string, email: string, role: Colla
   }
 
   if (role === 'Add Transactions Only') {
-    newCollaborator.visibility = { balance: false, income: false, expenses: false };
+    newCollaborator.visibility = { balance: true, income: true, expenses: true };
   }
 
   await updateDoc(bookRef, {
@@ -183,6 +206,15 @@ export async function acceptInvitation(bookId: string, email: string): Promise<b
 
   if (collaboratorFound) {
     await updateDoc(bookRef, { collaborators: updatedCollaborators });
+    
+    // Also, create a user document if one doesn't exist for the new collaborator
+    const userQuery = query(collection(db, "users"), where("email", "==", lowercasedEmail));
+    const userSnapshot = await getDocs(userQuery);
+    if (userSnapshot.empty) {
+      // We don't have the UID here, so we can't create a full user doc.
+      // The user's UID will be added when they first log in.
+    }
+
     return true;
   }
 
@@ -223,6 +255,8 @@ export async function removeCollaborator(bookId: string, collaboratorEmail: stri
     }
 
     const collaborators = bookSnap.data().collaborators || [];
+    
+    // Firestore's arrayRemove works with the entire object. We must find the exact object to remove.
     const collaboratorToRemove = collaborators.find((c: Collaborator) => c.email.toLowerCase() === collaboratorEmail.toLowerCase());
 
     if (collaboratorToRemove) {
@@ -230,6 +264,30 @@ export async function removeCollaborator(bookId: string, collaboratorEmail: stri
             collaborators: arrayRemove(collaboratorToRemove)
         });
     } else {
-        throw new Error("Collaborator not found");
+        // This case handles if a collaborator was already removed or the email is wrong.
+        // To be safe, we can also filter and update, though it's more reads/writes.
+        const remainingCollaborators = collaborators.filter((c: Collaborator) => c.email.toLowerCase() !== collaboratorEmail.toLowerCase());
+        if (remainingCollaborators.length < collaborators.length) {
+             await updateDoc(bookRef, {
+                collaborators: remainingCollaborators
+            });
+        } else {
+            throw new Error("Collaborator not found");
+        }
+    }
+}
+
+// Function to store user information
+export async function storeUser(user: { uid: string, email: string | null, displayName?: string | null }) {
+    if (!user.email) return;
+    const userRef = doc(db, 'users', user.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+        await setDoc(userRef, {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName || user.email,
+        });
     }
 }

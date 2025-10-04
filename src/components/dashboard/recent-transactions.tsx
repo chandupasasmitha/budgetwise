@@ -1,3 +1,4 @@
+
 "use client";
 import {
   Card,
@@ -17,9 +18,10 @@ interface RecentTransactionsProps {
   isLoading: boolean;
   onTransactionAdded?: () => void;
   canAddTransaction?: boolean;
+  ownerId?: string;
 }
 
-export default function RecentTransactions({ transactions, bookId, isLoading, onTransactionAdded, canAddTransaction }: RecentTransactionsProps) {
+export default function RecentTransactions({ transactions, bookId, isLoading, onTransactionAdded, canAddTransaction, ownerId }: RecentTransactionsProps) {
   return (
     <Card>
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -41,7 +43,7 @@ export default function RecentTransactions({ transactions, bookId, isLoading, on
             <Skeleton className="h-10 w-full" />
           </div>
         ) : (
-          <TransactionsTable transactions={transactions} onTransactionChange={onTransactionAdded} />
+          <TransactionsTable transactions={transactions} onTransactionChange={onTransactionAdded} ownerId={ownerId} />
         )}
       </CardContent>
     </Card>
