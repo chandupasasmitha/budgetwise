@@ -295,7 +295,7 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <h1 className="text-2xl md:text-3xl font-bold">{book.name}</h1>
         {showBalance && (
-          <div className="text-lg sm:text-2xl font-bold">
+          <div className="text-lg sm:text-xl font-bold self-end sm:self-center">
             Balance:{" "}
             <span
               className={
@@ -310,7 +310,7 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
 
       {(canViewDetails || showIncome || showExpenses) && (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <OverviewCards
               transactions={transactions}
               showBalance={showBalance ?? false}
@@ -319,22 +319,18 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
             />
           </div>
           {canViewDetails && (
-            <div className="grid gap-4 xl:grid-cols-3">
-              <div className="grid auto-rows-max items-start gap-4 xl:col-span-3">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="sm:col-span-1 bg-card rounded-xl shadow-sm p-4">
-                    <h3 className="mb-2 text-lg font-semibold">
-                      Spending Trend
-                    </h3>
-                    <SpendingTrendChart expenses={expenses} />
-                  </div>
-                  <div className="sm:col-span-1 bg-card rounded-xl shadow-sm p-4">
-                    <h3 className="mb-2 text-lg font-semibold">
-                      Category Breakdown
-                    </h3>
-                    <CategoryPieChart expenses={expenses} />
-                  </div>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-card rounded-xl shadow-sm p-4">
+                <h3 className="mb-2 text-lg font-semibold">
+                  Spending Trend
+                </h3>
+                <SpendingTrendChart expenses={expenses} />
+              </div>
+              <div className="bg-card rounded-xl shadow-sm p-4">
+                <h3 className="mb-2 text-lg font-semibold">
+                  Category Breakdown
+                </h3>
+                <CategoryPieChart expenses={expenses} />
               </div>
             </div>
           )}
