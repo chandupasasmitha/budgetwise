@@ -1,7 +1,7 @@
 
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, initializeFirestore } from "firebase/firestore";
+import { getFirestore, Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
     apiKey: "AIzaSyA3iLcMZigjY_fkYiS87RwpjZS3sW2DCUE",
@@ -16,8 +16,17 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
-// Initialize Firestore only on the client side to avoid connectivity issues.
-const db = typeof window !== 'undefined' ? getFirestore(app) : null;
+let db: Firestore | null = null;
+
+const initializeDb = () => {
+    if (typeof window !== 'undefined' && !db) {
+        db = getFirestore(app);
+    }
+    return db;
+};
+
+// Initialize db on client
+initializeDb();
 
 
 export { app, auth, googleProvider, db };
