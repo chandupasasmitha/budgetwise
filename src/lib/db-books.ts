@@ -107,13 +107,10 @@ export async function getTransactionsForBook(bookId: string): Promise<Transactio
     return [];
   }
 
-  // Get all unique user IDs from transactions
   const userIds = [...new Set(transactionsSnapshot.docs.map(doc => doc.data().userId))];
 
-  // Fetch user data for all user IDs
   const users: Record<string, { email: string }> = {};
   if (userIds.length > 0) {
-      // Note: Firestore 'in' query is limited to 30 items. For more users, you'd need multiple queries.
       const usersQuery = query(collection(db, "users"), where("uid", "in", userIds));
       const usersSnapshot = await getDocs(usersQuery);
       usersSnapshot.forEach(doc => {
@@ -121,10 +118,9 @@ export async function getTransactionsForBook(bookId: string): Promise<Transactio
       });
   }
   
-
   const transactions = transactionsSnapshot.docs.map(doc => {
     const data = doc.data();
-    const userEmail = users[data.userId]?.email || 'Unknown User';
+    const userEmail = users[data.userId]?.email || "Unknown User";
     return {
       id: doc.id,
       description: data.description,
@@ -207,12 +203,9 @@ export async function acceptInvitation(bookId: string, email: string): Promise<b
   if (collaboratorFound) {
     await updateDoc(bookRef, { collaborators: updatedCollaborators });
     
-    // Also, create a user document if one doesn't exist for the new collaborator
     const userQuery = query(collection(db, "users"), where("email", "==", lowercasedEmail));
     const userSnapshot = await getDocs(userQuery);
     if (userSnapshot.empty) {
-      // We don't have the UID here, so we can't create a full user doc.
-      // The user's UID will be added when they first log in.
     }
 
     return true;
@@ -256,7 +249,6 @@ export async function removeCollaborator(bookId: string, collaboratorEmail: stri
 
     const collaborators = bookSnap.data().collaborators || [];
     
-    // Firestore's arrayRemove works with the entire object. We must find the exact object to remove.
     const collaboratorToRemove = collaborators.find((c: Collaborator) => c.email.toLowerCase() === collaboratorEmail.toLowerCase());
 
     if (collaboratorToRemove) {
@@ -264,8 +256,6 @@ export async function removeCollaborator(bookId: string, collaboratorEmail: stri
             collaborators: arrayRemove(collaboratorToRemove)
         });
     } else {
-        // This case handles if a collaborator was already removed or the email is wrong.
-        // To be safe, we can also filter and update, though it's more reads/writes.
         const remainingCollaborators = collaborators.filter((c: Collaborator) => c.email.toLowerCase() !== collaboratorEmail.toLowerCase());
         if (remainingCollaborators.length < collaborators.length) {
              await updateDoc(bookRef, {
@@ -277,7 +267,6 @@ export async function removeCollaborator(bookId: string, collaboratorEmail: stri
     }
 }
 
-// Function to store user information
 export async function storeUser(user: { uid: string, email: string | null, displayName?: string | null }) {
     if (!user.email) return;
     const userRef = doc(db, 'users', user.uid);

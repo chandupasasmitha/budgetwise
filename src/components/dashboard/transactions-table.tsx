@@ -1,7 +1,7 @@
 
 "use client";
 import type { Transaction } from "@/lib/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { doc, deleteDoc, updateDoc } from "firebase/firestore";
 import {
@@ -111,6 +111,13 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
                 const result = await response.json();
                 if (result.success) {
                     imageUrl = result.url;
+                    if (editingTransaction.imageUrl) {
+                         await fetch("/api/delete-image", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ imageUrl: editingTransaction.imageUrl }),
+                        });
+                    }
                     await updateTransaction(imageUrl);
                 } else {
                     throw new Error("Image upload failed");
@@ -163,7 +170,7 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
 
   const handleDeleteImage = async (transaction: Transaction) => {
     if (!transaction.imageUrl) return;
-
+    setIsSubmitting(true);
     try {
         const response = await fetch("/api/delete-image", {
             method: "POST",
@@ -189,6 +196,10 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
             title: "Error deleting image",
             description: error.message,
         });
+    } finally {
+        setIsImageViewerOpen(false);
+        setViewingTransaction(null);
+        setIsSubmitting(false);
     }
 }
 
@@ -318,7 +329,6 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
         </TooltipProvider>
       </div>
       
-      {/* Edit Transaction Dialog */}
       <Dialog open={!!editingTransaction && !isEditingImage} onOpenChange={(isOpen) => { if (!isOpen) { setEditingTransaction(null) }}}>
         <DialogContent>
           <DialogHeader>
@@ -399,7 +409,6 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
         </DialogContent>
       </Dialog>
 
-      {/* Edit Image Dialog */}
       <Dialog open={isEditingImage} onOpenChange={(isOpen) => { if (!isOpen) { setIsEditingImage(false); setEditingTransaction(null) }}}>
         <DialogContent>
           <DialogHeader>
@@ -441,8 +450,7 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
         </DialogContent>
       </Dialog>
       
-      {/* Image Viewer Dialog */}
-      <Dialog open={isImageViewerOpen} onOpenChange={setIsImageViewerOpen}>
+      <Dialog open={isImageViewerOpen} onOpenChange={(isOpen) => { if (!isOpen) { setViewingTransaction(null) }}}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Bill/Receipt</DialogTitle>
@@ -454,15 +462,18 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
             {viewingTransaction?.imageUrl && <Image src={viewingTransaction.imageUrl} alt="Bill" layout="fill" objectFit="contain" />}
           </div>
            {viewingTransaction && (
-            <DialogFooter className="mt-4">
+            <DialogFooter className="mt-4 sm:justify-start">
                 <Button variant="outline" onClick={() => {
                     setIsImageViewerOpen(false);
                     handleImageEdit(viewingTransaction);
                 }}>Edit</Button>
-                <Button variant="destructive" onClick={() => {
-                    setIsImageViewerOpen(false);
-                    handleDeleteImage(viewingTransaction);
-                }}>Delete</Button>
+                <Button variant="destructive" onClick={() => handleDeleteImage(viewingTransaction)} disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Delete
+                </Button>
+                 <DialogClose asChild>
+                    <Button type="button" className="sm:ml-auto">Close</Button>
+                 </DialogClose>
             </DialogFooter>
           )}
         </DialogContent>
