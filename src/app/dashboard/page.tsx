@@ -2,9 +2,8 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import OverviewCards from "@/components/dashboard/overview-cards";
-import CategoryPieChart from "@/components/dashboard/category-pie-chart";
-import SpendingTrendChart from "@/components/dashboard/spending-trend-chart";
 import RecentTransactions from "@/components/dashboard/recent-transactions";
 import { createBook, getBooks, getTransactionsForBook, storeUser } from "@/lib/db-books";
 import { useAuth } from "@/hooks/use-auth";
@@ -18,7 +17,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Users } from "lucide-react";
+import { ArrowLeft, Users, LineChart } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import ManageCollaboratorsDialog from "@/components/dashboard/manage-collaborators-dialog";
 import { Separator } from "@/components/ui/separator";
@@ -274,8 +273,6 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
       ? transactions
       : transactions.filter((t) => t.userId === user.uid);
 
-  const expenses = transactions.filter((t) => t.type === "expense");
-
   const showBalance =
     isOwner || book.visibilitySettings?.balance !== false;
   const showIncome =
@@ -287,10 +284,21 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
 
   return (
     <div className="flex-1 space-y-6">
-      <Button onClick={onBack} variant="ghost" className="flex items-center">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Dashboard
-      </Button>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <Button onClick={onBack} variant="ghost" className="flex items-center">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Dashboard
+        </Button>
+        {canViewDetails && (
+            <Button asChild variant="outline">
+                <Link href={`/dashboard/records?bookId=${book.id}`}>
+                    <LineChart className="w-4 h-4 mr-2" />
+                    View Records
+                </Link>
+            </Button>
+        )}
+      </div>
+
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <h1 className="text-2xl md:text-3xl font-bold">{book.name}</h1>
@@ -309,32 +317,14 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
       </div>
 
       {(canViewDetails || showIncome || showExpenses) && (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <OverviewCards
               transactions={transactions}
               showBalance={showBalance ?? false}
               showIncome={showIncome ?? false}
               showExpenses={showExpenses ?? false}
             />
-          </div>
-          {canViewDetails && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-card rounded-xl shadow-sm p-4">
-                <h3 className="mb-2 text-lg font-semibold">
-                  Spending Trend
-                </h3>
-                <SpendingTrendChart expenses={expenses} />
-              </div>
-              <div className="bg-card rounded-xl shadow-sm p-4">
-                <h3 className="mb-2 text-lg font-semibold">
-                  Category Breakdown
-                </h3>
-                <CategoryPieChart expenses={expenses} />
-              </div>
-            </div>
-          )}
-        </>
+        </div>
       )}
 
       <RecentTransactions
@@ -509,8 +499,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-    
-
-    
-
