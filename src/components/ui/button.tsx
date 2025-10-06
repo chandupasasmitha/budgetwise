@@ -1,8 +1,9 @@
-import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { cva, type VariantProps } from "class-variance-authority"
+import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
+import { Loader2 } from "lucide-react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
@@ -31,26 +32,62 @@ const buttonVariants = cva(
       size: "default",
     },
   }
-)
+);
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
-  asChild?: boolean
+  asChild?: boolean;
+  isLoading?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button"
+    const { isLoading, children, ...rest } = props as ButtonProps;
+
+    // If rendering asChild, clone the single child element and inject
+    // classes/disabled/loading into it. This avoids passing multiple
+    // children to Radix Slot which will throw when more than one child
+    // is present.
+    if (asChild) {
+      const child = React.Children.only(children) as React.ReactElement;
+      const existingClass = (child.props && child.props.className) || "";
+      const cloned = React.cloneElement(
+        child,
+        {
+          className: cn(
+            buttonVariants({ variant, size, className }),
+            existingClass
+          ),
+          disabled: isLoading || child.props?.disabled,
+          ref,
+          ...rest,
+        },
+        // Inject spinner inside the child when loading, before its original children
+        isLoading
+          ? [
+              <Loader2 key="spinner" className="mr-2 h-4 w-4 animate-spin" />,
+              ...(React.Children.toArray(child.props.children) as any[]),
+            ]
+          : child.props.children
+      );
+      return cloned;
+    }
+
+    const Comp = "button";
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
-        {...props}
-      />
-    )
+        disabled={isLoading || (props as any).disabled}
+        {...(rest as React.ButtonHTMLAttributes<HTMLButtonElement>)}
+      >
+        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {children}
+      </Comp>
+    );
   }
-)
-Button.displayName = "Button"
+);
+Button.displayName = "Button";
 
-export { Button, buttonVariants }
+export { Button, buttonVariants };

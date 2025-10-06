@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -13,25 +12,39 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { addCollaborator, updateCollaboratorPermissions, removeCollaborator } from "@/lib/db-books";
+import {
+  addCollaborator,
+  updateCollaboratorPermissions,
+  removeCollaborator,
+} from "@/lib/db-books";
 import { useAuth } from "@/hooks/use-auth";
 import type { Collaborator } from "@/lib/types";
 import { X, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ManageCollaboratorsDialogProps {
-  book: { id: string; name: string, collaborators: Collaborator[] };
+  book: { id: string; name: string; collaborators: Collaborator[] };
   isOpen: boolean;
   onClose: () => void;
 }
 
 export type CollaboratorRole = "Full Access" | "Add Transactions Only";
 
-export default function ManageCollaboratorsDialog({ book: initialBook, isOpen, onClose }: ManageCollaboratorsDialogProps) {
+export default function ManageCollaboratorsDialog({
+  book: initialBook,
+  isOpen,
+  onClose,
+}: ManageCollaboratorsDialogProps) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<CollaboratorRole>("Add Transactions Only");
   const [isInviting, setIsInviting] = useState(false);
@@ -44,11 +57,13 @@ export default function ManageCollaboratorsDialog({ book: initialBook, isOpen, o
     setBook(initialBook);
   }, [initialBook]);
 
-
   const handleCollaboratorsUpdate = () => {
     // This function will now be called to refresh the dialog's internal state
-    const updatedCollaborators = book.collaborators.map(c => ({...c}));
-    setBook(prevBook => ({...prevBook, collaborators: updatedCollaborators}));
+    const updatedCollaborators = book.collaborators.map((c) => ({ ...c }));
+    setBook((prevBook) => ({
+      ...prevBook,
+      collaborators: updatedCollaborators,
+    }));
   };
 
   const handleInvite = async () => {
@@ -81,8 +96,10 @@ export default function ManageCollaboratorsDialog({ book: initialBook, isOpen, o
       });
       setEmail("");
       // Update internal state
-      setBook(prevBook => ({...prevBook, collaborators: [...prevBook.collaborators, newCollaborator]}));
-
+      setBook((prevBook) => ({
+        ...prevBook,
+        collaborators: [...prevBook.collaborators, newCollaborator],
+      }));
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -90,59 +107,70 @@ export default function ManageCollaboratorsDialog({ book: initialBook, isOpen, o
         description: error.message || "Failed to send invitation.",
       });
     } finally {
-        setIsInviting(false);
+      setIsInviting(false);
     }
   };
 
-  const handlePermissionChange = async (collaboratorEmail: string, permission: 'balance' | 'income' | 'expenses', value: boolean) => {
+  const handlePermissionChange = async (
+    collaboratorEmail: string,
+    permission: "balance" | "income" | "expenses",
+    value: boolean
+  ) => {
     try {
-      await updateCollaboratorPermissions(book.id, collaboratorEmail, permission, value);
-      
+      await updateCollaboratorPermissions(
+        book.id,
+        collaboratorEmail,
+        permission,
+        value
+      );
+
       // Optimistically update the internal state
-      setBook(prevBook => ({
-          ...prevBook,
-          collaborators: prevBook.collaborators.map(c => 
-              c.email.toLowerCase() === collaboratorEmail.toLowerCase()
-              ? { ...c, visibility: { ...c.visibility, [permission]: value } }
-              : c
-          )
+      setBook((prevBook) => ({
+        ...prevBook,
+        collaborators: prevBook.collaborators.map((c) =>
+          c.email.toLowerCase() === collaboratorEmail.toLowerCase()
+            ? { ...c, visibility: { ...c.visibility, [permission]: value } }
+            : c
+        ),
       }));
 
       toast({
         title: "Permissions Updated",
-        description: `Visibility settings for ${collaboratorEmail} have been updated.`
+        description: `Visibility settings for ${collaboratorEmail} have been updated.`,
       });
     } catch (error) {
-       toast({
+      toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to update permissions.",
       });
     }
-  }
+  };
 
   const handleRemoveCollaborator = async (collaboratorEmail: string) => {
-      try {
-          await removeCollaborator(book.id, collaboratorEmail);
-          
-          // Update internal state
-          setBook(prevBook => ({
-              ...prevBook,
-              collaborators: prevBook.collaborators.filter(c => c.email.toLowerCase() !== collaboratorEmail.toLowerCase())
-          }));
+    try {
+      await removeCollaborator(book.id, collaboratorEmail);
 
-          toast({
-              title: "Collaborator Removed",
-              description: `${collaboratorEmail} has been removed from the cash book.`
-          });
-      } catch (error) {
-           toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to remove collaborator.",
-          });
-      }
-  }
+      // Update internal state
+      setBook((prevBook) => ({
+        ...prevBook,
+        collaborators: prevBook.collaborators.filter(
+          (c) => c.email.toLowerCase() !== collaboratorEmail.toLowerCase()
+        ),
+      }));
+
+      toast({
+        title: "Collaborator Removed",
+        description: `${collaboratorEmail} has been removed from the cash book.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to remove collaborator.",
+      });
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -168,68 +196,135 @@ export default function ManageCollaboratorsDialog({ book: initialBook, isOpen, o
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <Select onValueChange={(value: CollaboratorRole) => setRole(value)} defaultValue={role}>
+              <Select
+                onValueChange={(value: CollaboratorRole) => setRole(value)}
+                defaultValue={role}
+              >
                 <SelectTrigger id="role">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Add Transactions Only">Add Transactions Only</SelectItem>
+                  <SelectItem value="Add Transactions Only">
+                    Add Transactions Only
+                  </SelectItem>
                   <SelectItem value="Full Access">Full Access</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={handleInvite} className="w-full" disabled={isInviting}>
-              {isInviting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button
+              onClick={handleInvite}
+              className="w-full"
+              isLoading={isInviting}
+            >
               Send Invitation
             </Button>
 
             {book.collaborators && book.collaborators.length > 0 && (
-                <>
-                    <Separator className="my-4" />
+              <>
+                <Separator className="my-4" />
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Existing Collaborators
+                  </h3>
+                  <ScrollArea className="h-60 pr-4">
                     <div className="space-y-4">
-                        <h3 className="text-sm font-medium text-muted-foreground">Existing Collaborators</h3>
-                        <ScrollArea className="h-60 pr-4">
-                            <div className="space-y-4">
-                                {book.collaborators.map((c, index) => (
-                                    <div key={`${c.email}-${index}`} className="p-3 border rounded-md">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <p className="font-semibold">{c.email}</p>
-                                                <p className="text-sm text-muted-foreground">{c.role} ({c.status})</p>
-                                            </div>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveCollaborator(c.email)}>
-                                            <X className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                        {c.role === 'Add Transactions Only' && (
-                                            <div className="mt-3 pt-3 border-t">
-                                                <h4 className="text-xs font-medium text-muted-foreground mb-2">Visibility Settings</h4>
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center justify-between">
-                                                        <Label htmlFor={`balance-${c.email}`} className="text-sm font-normal">View Total Balance</Label>
-                                                        <Switch id={`balance-${c.email}`} checked={c.visibility?.balance} onCheckedChange={(val) => handlePermissionChange(c.email, 'balance', val)} />
-                                                    </div>
-                                                    <div className="flex items-center justify-between">
-                                                        <Label htmlFor={`income-${c.email}`} className="text-sm font-normal">View Total Income</Label>
-                                                        <Switch id={`income-${c.email}`} checked={c.visibility?.income} onCheckedChange={(val) => handlePermissionChange(c.email, 'income', val)} />
-                                                    </div>
-                                                    <div className="flex items-center justify-between">
-                                                        <Label htmlFor={`expenses-${c.email}`} className="text-sm font-normal">View Total Expenses</Label>
-                                                        <Switch id={`expenses-${c.email}`} checked={c.visibility?.expenses} onCheckedChange={(val) => handlePermissionChange(c.email, 'expenses', val)} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+                      {book.collaborators.map((c, index) => (
+                        <div
+                          key={`${c.email}-${index}`}
+                          className="p-3 border rounded-md"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-semibold">{c.email}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {c.role} ({c.status})
+                              </p>
                             </div>
-                        </ScrollArea>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => handleRemoveCollaborator(c.email)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          {c.role === "Add Transactions Only" && (
+                            <div className="mt-3 pt-3 border-t">
+                              <h4 className="text-xs font-medium text-muted-foreground mb-2">
+                                Visibility Settings
+                              </h4>
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <Label
+                                    htmlFor={`balance-${c.email}`}
+                                    className="text-sm font-normal"
+                                  >
+                                    View Total Balance
+                                  </Label>
+                                  <Switch
+                                    id={`balance-${c.email}`}
+                                    checked={c.visibility?.balance}
+                                    onCheckedChange={(val) =>
+                                      handlePermissionChange(
+                                        c.email,
+                                        "balance",
+                                        val
+                                      )
+                                    }
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <Label
+                                    htmlFor={`income-${c.email}`}
+                                    className="text-sm font-normal"
+                                  >
+                                    View Total Income
+                                  </Label>
+                                  <Switch
+                                    id={`income-${c.email}`}
+                                    checked={c.visibility?.income}
+                                    onCheckedChange={(val) =>
+                                      handlePermissionChange(
+                                        c.email,
+                                        "income",
+                                        val
+                                      )
+                                    }
+                                  />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <Label
+                                    htmlFor={`expenses-${c.email}`}
+                                    className="text-sm font-normal"
+                                  >
+                                    View Total Expenses
+                                  </Label>
+                                  <Switch
+                                    id={`expenses-${c.email}`}
+                                    checked={c.visibility?.expenses}
+                                    onCheckedChange={(val) =>
+                                      handlePermissionChange(
+                                        c.email,
+                                        "expenses",
+                                        val
+                                      )
+                                    }
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                </>
+                  </ScrollArea>
+                </div>
+              </>
             )}
           </div>
         </div>
-        
+
         <DialogFooter className="p-6 pt-4 border-t mt-4">
           <Button variant="outline" onClick={onClose}>
             Done

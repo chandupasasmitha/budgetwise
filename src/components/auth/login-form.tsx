@@ -1,25 +1,24 @@
+"use client";
 
-'use client';
-
-import Link from 'next/link';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword, signInWithRedirect } from 'firebase/auth';
-import { auth, googleProvider } from '@/lib/firebase';
-import { Button } from '@/components/ui/button';
+import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { signInWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
+import { auth, googleProvider } from "@/lib/firebase";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
-import { storeUser } from '@/lib/db-books';
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
+import { storeUser } from "@/lib/db-books";
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -45,8 +44,8 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export function LoginForm() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const router = useRouter();
@@ -57,11 +56,11 @@ export function LoginForm() {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push('/dashboard');
+      router.push("/dashboard");
     } catch (error: any) {
       toast({
-        variant: 'destructive',
-        title: 'Login failed',
+        variant: "destructive",
+        title: "Login failed",
         description: error.message,
       });
     } finally {
@@ -76,14 +75,14 @@ export function LoginForm() {
       // The result is handled on the page load after redirect.
       await signInWithRedirect(auth, googleProvider);
     } catch (error: any) {
-       toast({
-        variant: 'destructive',
-        title: 'Google login failed',
+      toast({
+        variant: "destructive",
+        title: "Google login failed",
         description: error.message,
       });
       setIsGoogleLoading(false);
     }
-  }
+  };
 
   return (
     <Card>
@@ -109,37 +108,40 @@ export function LoginForm() {
           <div className="grid gap-2">
             <div className="flex items-center">
               <Label htmlFor="password">Password</Label>
-              <Link
-                href="#"
-                className="ml-auto inline-block text-sm underline"
-              >
+              <Link href="#" className="ml-auto inline-block text-sm underline">
                 Forgot your password?
               </Link>
             </div>
-            <Input 
-              id="password" 
-              type="password" 
-              required 
+            <Input
+              id="password"
+              type="password"
+              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button
+            type="submit"
+            className="w-full"
+            isLoading={isLoading}
+            disabled={isGoogleLoading}
+          >
             Login
           </Button>
         </form>
-        <Separator/>
-        <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading || isGoogleLoading}>
-          {isGoogleLoading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <GoogleIcon className="mr-2 h-4 w-4" />
-          )}
+        <Separator />
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={handleGoogleLogin}
+          isLoading={isGoogleLoading}
+          disabled={isLoading}
+        >
+          {!isGoogleLoading && <GoogleIcon className="mr-2 h-4 w-4" />}
           Login with Google
         </Button>
         <div className="mt-4 text-center text-sm">
-          Don&apos;t have an account?{' '}
+          Don&apos;t have an account?{" "}
           <Link href="/signup" className="underline">
             Sign up
           </Link>
