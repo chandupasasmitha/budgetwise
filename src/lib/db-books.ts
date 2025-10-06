@@ -1,6 +1,6 @@
 
 import { db } from "@/lib/firebase";
-import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, arrayUnion, getDoc, or, arrayRemove, setDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, arrayUnion, getDoc, or, arrayRemove, setDoc, deleteDoc } from "firebase/firestore";
 import type { Transaction, Collaborator } from "./types";
 import type { CollaboratorRole } from "@/components/dashboard/manage-collaborators-dialog";
 
@@ -175,6 +175,11 @@ export async function addPaymentMethod({ name, userId }: { name: string; userId:
         createdAt: Timestamp.now(),
     });
     return docRef.id;
+}
+
+export async function deletePaymentMethod(methodId: string) {
+    const db = getDb();
+    await deleteDoc(doc(db, "paymentMethods", methodId));
 }
 
 export async function addCollaborator(bookId: string, email: string, role: CollaboratorRole) {
