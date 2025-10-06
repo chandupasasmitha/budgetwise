@@ -51,13 +51,13 @@ export async function getBooks(userId: string, userEmail: string) {
 
     const querySnapshot = await getDocs(q);
     
-    const booksData = querySnapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter(book => {
-          if (book.ownerId === userId) return true;
-          const collaborator = book.collaborators.find((c: any) => c.email.toLowerCase() === lowercasedEmail);
-          return collaborator && collaborator.status === 'accepted';
-      });
+        const booksData = querySnapshot.docs
+            .map(doc => ({ id: doc.id, ...(doc.data() as any) }))
+            .filter((book: any) => {
+                    if (book.ownerId === userId) return true;
+                    const collaborator = (book.collaborators || []).find((c: any) => c.email.toLowerCase() === lowercasedEmail);
+                    return collaborator && collaborator.status === 'accepted';
+            }) as any[];
 
 
     if (booksData.length === 0) return [];

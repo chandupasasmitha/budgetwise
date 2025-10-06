@@ -23,8 +23,11 @@ export type Collaborator = {
   role: 'Full Access' | 'Add Transactions Only';
   status: 'pending' | 'accepted';
   visibility?: {
-    balance: boolean;
-    income: boolean;
-    expenses: boolean;
+    balance?: boolean;
+    income?: boolean;
+    expenses?: boolean;
   }
 };
+
+// Convenience alias for components that deal specifically with expenses
+export type Expense = Transaction;
