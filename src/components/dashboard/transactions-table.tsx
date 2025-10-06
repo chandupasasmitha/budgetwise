@@ -224,110 +224,112 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
   return (
     <>
       <div className="rounded-md border">
-        <TooltipProvider>
-            <Table>
-            <TableHeader>
-                <TableRow>
-                <TableHead>Description</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Payment Method</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>
-                    <span className="sr-only">Actions</span>
-                </TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {transactions.length === 0 ? (
-                <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
-                    No transactions yet.
-                    </TableCell>
-                </TableRow>
-                ) : (
-                transactions.map((transaction) => {
-                    const isCollaboratorTx = ownerId && transaction.userId !== ownerId;
-                    return (
-                        <TableRow key={transaction.id} className={cn(isCollaboratorTx && "bg-blue-50 dark:bg-blue-950/50")}>
-                        <TableCell>
-                            <div className="font-medium flex items-center gap-2">
-                                {isCollaboratorTx ? (
-                                    <Tooltip>
-                                        <TooltipTrigger>
-                                            <UserSquare className="h-4 w-4 text-blue-500" />
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>Added by: {transaction.userEmail}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                ) : null}
+        <div className="w-full overflow-x-auto">
+            <TooltipProvider>
+                <Table>
+                <TableHeader>
+                    <TableRow>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Payment Method</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>
+                        <span className="sr-only">Actions</span>
+                    </TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {transactions.length === 0 ? (
+                    <TableRow>
+                        <TableCell colSpan={6} className="h-24 text-center">
+                        No transactions yet.
+                        </TableCell>
+                    </TableRow>
+                    ) : (
+                    transactions.map((transaction) => {
+                        const isCollaboratorTx = ownerId && transaction.userId !== ownerId;
+                        return (
+                            <TableRow key={transaction.id} className={cn(isCollaboratorTx && "bg-blue-50 dark:bg-blue-950/50")}>
+                            <TableCell>
+                                <div className="font-medium flex items-center gap-2 break-words">
+                                    {isCollaboratorTx ? (
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <UserSquare className="h-4 w-4 text-blue-500" />
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Added by: {transaction.userEmail}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    ) : null}
 
-                                {transaction.description}
-                                {transaction.imageUrl && (
-                                    <button onClick={() => handleViewImage(transaction)} className="text-muted-foreground hover:text-primary">
-                                        <Paperclip className="h-4 w-4" />
-                                    </button>
+                                    {transaction.description}
+                                    {transaction.imageUrl && (
+                                        <button onClick={() => handleViewImage(transaction)} className="text-muted-foreground hover:text-primary">
+                                            <Paperclip className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            </TableCell>
+                            <TableCell>
+                                {transaction.type === 'expense' ? (
+                                <Badge variant="outline">{transaction.category}</Badge>
+                                ) : (
+                                <Badge variant="secondary">Income</Badge>
                                 )}
-                            </div>
-                        </TableCell>
-                        <TableCell>
-                            {transaction.type === 'expense' ? (
-                            <Badge variant="outline">{transaction.category}</Badge>
-                            ) : (
-                            <Badge variant="secondary">Income</Badge>
-                            )}
-                        </TableCell>
-                        <TableCell>{transaction.paymentMethod}</TableCell>
-                        <TableCell>
-                            {format(transaction.date, "MMM d, yyyy")}
-                        </TableCell>
-                        <TableCell className={cn(
-                            "text-right font-medium",
-                            transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                        )}>
-                            {transaction.type === 'income' ? '+' : '-'}Rs. {transaction.amount.toFixed(2)}
-                        </TableCell>
-                        <TableCell>
-                            <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => handleEdit(transaction)}>
-                                Edit Transaction
-                                </DropdownMenuItem>
-                                {transaction.type === 'expense' && (
-                                    <>
-                                        <DropdownMenuSeparator />
-                                        {transaction.imageUrl ? (
-                                            <>
-                                                <DropdownMenuItem onClick={() => handleImageEdit(transaction)}>Edit Bill</DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handleDeleteImage(transaction)}>Delete Bill</DropdownMenuItem>
-                                            </>
-                                        ) : (
-                                            <DropdownMenuItem onClick={() => handleImageEdit(transaction)}>Add Bill</DropdownMenuItem>
-                                        )}
-                                </>
-                                )}
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(transaction.id)}>
-                                Delete Transaction
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                            </DropdownMenu>
-                        </TableCell>
-                        </TableRow>
-                    )
-                })
-                )}
-            </TableBody>
-            </Table>
-        </TooltipProvider>
+                            </TableCell>
+                            <TableCell>{transaction.paymentMethod}</TableCell>
+                            <TableCell>
+                                {format(transaction.date, "MMM d, yyyy")}
+                            </TableCell>
+                            <TableCell className={cn(
+                                "text-right font-medium",
+                                transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                            )}>
+                                {transaction.type === 'income' ? '+' : '-'}Rs. {transaction.amount.toFixed(2)}
+                            </TableCell>
+                            <TableCell>
+                                <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Toggle menu</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => handleEdit(transaction)}>
+                                    Edit Transaction
+                                    </DropdownMenuItem>
+                                    {transaction.type === 'expense' && (
+                                        <>
+                                            <DropdownMenuSeparator />
+                                            {transaction.imageUrl ? (
+                                                <>
+                                                    <DropdownMenuItem onClick={() => handleImageEdit(transaction)}>Edit Bill</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleDeleteImage(transaction)}>Delete Bill</DropdownMenuItem>
+                                                </>
+                                            ) : (
+                                                <DropdownMenuItem onClick={() => handleImageEdit(transaction)}>Add Bill</DropdownMenuItem>
+                                            )}
+                                    </>
+                                    )}
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(transaction.id)}>
+                                    Delete Transaction
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                                </DropdownMenu>
+                            </TableCell>
+                            </TableRow>
+                        )
+                    })
+                    )}
+                </TableBody>
+                </Table>
+            </TooltipProvider>
+        </div>
       </div>
       
       <Dialog open={!!editingTransaction && !isEditingImage} onOpenChange={(isOpen) => { if (!isOpen) { setEditingTransaction(null) }}}>
@@ -491,3 +493,4 @@ function TransactionsTable({ transactions, onTransactionChange, ownerId }: Trans
 }
 
 export default TransactionsTable;
+
