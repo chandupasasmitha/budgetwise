@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
@@ -7,6 +7,11 @@ import { AuthProvider } from '@/lib/auth-provider';
 export const metadata: Metadata = {
   title: 'BudgetWise',
   description: 'Smart Personal Finance & Expense Tracker',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1.0,
 };
 
 export default function RootLayout({
