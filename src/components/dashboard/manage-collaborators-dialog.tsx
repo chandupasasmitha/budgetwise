@@ -167,14 +167,14 @@ export default function ManageCollaboratorsDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="p-6 pb-4 border-b">
+        <DialogHeader className="p-6 pb-4 border-b shrink-0">
           <DialogTitle>Manage Collaborators</DialogTitle>
           <DialogDescription>
             Invite new members and manage permissions for {`"${book.name}"`}.
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0">
+        <div className="flex-1 overflow-y-auto">
           <div className="space-y-4 p-6">
             <div className="space-y-2">
               <Label htmlFor="email">Email address</Label>
@@ -313,9 +313,9 @@ export default function ManageCollaboratorsDialog({
               </>
             )}
           </div>
-        </ScrollArea>
+        </div>
 
-        <DialogFooter className="p-6 pt-4 border-t">
+        <DialogFooter className="p-6 pt-4 border-t shrink-0">
           <Button variant="outline" onClick={onClose}>
             Done
           </Button>
