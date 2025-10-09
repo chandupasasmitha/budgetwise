@@ -109,3 +109,12 @@ button {
     transform: translateY(-12vh);
   }
 }
+
+/* Dialog sticky footer helper: add .dialog-sticky on the footer element to make
+   it stick above the keyboard and respect safe-area insets. */
+.dialog-sticky {
+  position: sticky;
+  bottom: calc(env(safe-area-inset-bottom) + var(--keyboard-offset, 0px));
+  background: transparent;
+  z-index: 55;
+}

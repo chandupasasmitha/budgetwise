@@ -1,10 +1,14 @@
-
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import OverviewCards from "@/components/dashboard/overview-cards";
 import RecentTransactions from "@/components/dashboard/recent-transactions";
-import { createBook, getBooks, getTransactionsForBook, storeUser } from "@/lib/db-books";
+import {
+  createBook,
+  getBooks,
+  getTransactionsForBook,
+  storeUser,
+} from "@/lib/db-books";
 import { useAuth } from "@/hooks/use-auth";
 import type { Collaborator, Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -67,7 +71,7 @@ const NewBookModal = ({ isOpen, onClose, onSave }: NewBookModalProps) => {
             onChange={(e) => setBookName(e.target.value)}
           />
         </div>
-        <DialogFooter>
+        <DialogFooter className="dialog-sticky p-6 pt-4 border-t">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
@@ -102,17 +106,19 @@ const Dashboard = ({
 
   const handleOpenCollaborators = (e: React.MouseEvent, book: Book) => {
     e.stopPropagation(); // Prevent card click event
-    const fullBookDetails = books.find(b => b.id === book.id);
+    const fullBookDetails = books.find((b) => b.id === book.id);
     if (fullBookDetails) {
-        setCollaboratorsModalBook(fullBookDetails);
+      setCollaboratorsModalBook(fullBookDetails);
     }
   };
-  
+
   const BookCard = ({ book }: { book: Book }) => {
     const isOwner = book.ownerId === currentUserId;
-    const canViewBalance = isOwner || book.visibilitySettings?.balance !== false;
+    const canViewBalance =
+      isOwner || book.visibilitySettings?.balance !== false;
     const canViewIncome = isOwner || book.visibilitySettings?.income !== false;
-    const canViewExpenses = isOwner || book.visibilitySettings?.expenses !== false;
+    const canViewExpenses =
+      isOwner || book.visibilitySettings?.expenses !== false;
 
     return (
       <div
@@ -135,7 +141,9 @@ const Dashboard = ({
               </span>
             </p>
           ) : (
-            <p className="text-sm text-muted-foreground italic">Balance hidden</p>
+            <p className="text-sm text-muted-foreground italic">
+              Balance hidden
+            </p>
           )}
           <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
             {canViewIncome ? (
@@ -146,7 +154,9 @@ const Dashboard = ({
                 </span>
               </p>
             ) : (
-              <p className="text-sm text-muted-foreground italic">Income hidden</p>
+              <p className="text-sm text-muted-foreground italic">
+                Income hidden
+              </p>
             )}
             {canViewExpenses ? (
               <p>
@@ -156,7 +166,9 @@ const Dashboard = ({
                 </span>
               </p>
             ) : (
-               <p className="text-sm text-muted-foreground italic">Expenses hidden</p>
+              <p className="text-sm text-muted-foreground italic">
+                Expenses hidden
+              </p>
             )}
           </div>
         </div>
@@ -272,14 +284,14 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
       ? transactions
       : transactions.filter((t) => t.userId === user.uid);
 
-  const showBalance =
-    isOwner || book.visibilitySettings?.balance !== false;
-  const showIncome =
-      isOwner || book.visibilitySettings?.income !== false;
-  const showExpenses =
-      isOwner || book.visibilitySettings?.expenses !== false;
-  
-  const canAddTransaction = book.currentUserRole === 'Owner' || book.currentUserRole === 'Full Access' || book.currentUserRole === 'Add Transactions Only';
+  const showBalance = isOwner || book.visibilitySettings?.balance !== false;
+  const showIncome = isOwner || book.visibilitySettings?.income !== false;
+  const showExpenses = isOwner || book.visibilitySettings?.expenses !== false;
+
+  const canAddTransaction =
+    book.currentUserRole === "Owner" ||
+    book.currentUserRole === "Full Access" ||
+    book.currentUserRole === "Add Transactions Only";
 
   return (
     <div className="flex-1 space-y-6">
@@ -289,15 +301,14 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
           Back to Dashboard
         </Button>
         {canViewDetails && (
-            <Button asChild variant="outline">
-                <Link href={`/dashboard/records?bookId=${book.id}`}>
-                    <LineChart className="w-4 h-4 mr-2" />
-                    View Records
-                </Link>
-            </Button>
+          <Button asChild variant="outline">
+            <Link href={`/dashboard/records?bookId=${book.id}`}>
+              <LineChart className="w-4 h-4 mr-2" />
+              View Records
+            </Link>
+          </Button>
         )}
       </div>
-
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <h1 className="text-2xl md:text-3xl font-bold">{book.name}</h1>
@@ -317,12 +328,12 @@ const CashBook = ({ book, onBack, onTransactionAdded }: CashBookProps) => {
 
       {(canViewDetails || showIncome || showExpenses) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <OverviewCards
-              transactions={transactions}
-              showBalance={showBalance ?? false}
-              showIncome={showIncome ?? false}
-              showExpenses={showExpenses ?? false}
-            />
+          <OverviewCards
+            transactions={transactions}
+            showBalance={showBalance ?? false}
+            showIncome={showIncome ?? false}
+            showExpenses={showExpenses ?? false}
+          />
         </div>
       )}
 
