@@ -29,7 +29,7 @@ import {
 } from "@/lib/db-books";
 import { useAuth } from "@/hooks/use-auth";
 import type { Collaborator } from "@/lib/types";
-import { X, Loader2 } from "lucide-react";
+import { X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ManageCollaboratorsDialogProps {
@@ -56,15 +56,6 @@ export default function ManageCollaboratorsDialog({
   useEffect(() => {
     setBook(initialBook);
   }, [initialBook]);
-
-  const handleCollaboratorsUpdate = () => {
-    // This function will now be called to refresh the dialog's internal state
-    const updatedCollaborators = book.collaborators.map((c) => ({ ...c }));
-    setBook((prevBook) => ({
-      ...prevBook,
-      collaborators: updatedCollaborators,
-    }));
-  };
 
   const handleInvite = async () => {
     if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email)) {

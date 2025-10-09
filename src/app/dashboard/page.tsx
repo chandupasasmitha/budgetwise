@@ -1,7 +1,6 @@
 
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { createPortal } from "react-dom";
 import Link from "next/link";
 import OverviewCards from "@/components/dashboard/overview-cards";
 import RecentTransactions from "@/components/dashboard/recent-transactions";
@@ -57,7 +56,7 @@ const NewBookModal = ({ isOpen, onClose, onSave }: NewBookModalProps) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Create New Cash Book</DialogTitle>
         </DialogHeader>

@@ -236,14 +236,19 @@ function AddTransactionSheet({ bookId, onTransactionAdded }: AddTransactionSheet
     <>
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
-          <Button size="sm" className="h-8 gap-1">
+           <Button size="sm" className="h-8 gap-1">
             <PlusCircle className="h-3.5 w-3.5" />
             <span className="whitespace-nowrap">
               Add Transaction
             </span>
           </Button>
         </SheetTrigger>
-        <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-lg">
+        <SheetContent 
+          className="flex flex-col gap-0 p-0 sm:max-w-lg"
+          onInteractOutside={(e) => {
+            e.preventDefault();
+          }}
+        >
           <SheetHeader className="p-6">
             <SheetTitle>Add a new transaction</SheetTitle>
             <SheetDescription>
