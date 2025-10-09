@@ -1,8 +1,9 @@
+
 "use client";
 import type { Transaction } from "@/lib/types";
 import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { doc, deleteDoc, updateDoc, Timestamp } from "firebase/firestore";
 import {
   Table,
   TableBody,
@@ -27,6 +28,7 @@ import {
   X,
   Loader2,
   UserSquare,
+  CalendarIcon,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -49,6 +51,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { useAuth } from "@/hooks/use-auth";
 import { getPaymentMethods } from "@/lib/db-books";
 import Image from "next/image";
@@ -88,6 +96,7 @@ function TransactionsTable({
     amount: 0,
     category: "",
     paymentMethod: "",
+    date: new Date(),
     image: undefined as File | undefined,
     imagePreview: null as string | null,
   });
@@ -105,6 +114,7 @@ function TransactionsTable({
       amount: transaction.amount,
       category: transaction.category || "",
       paymentMethod: transaction.paymentMethod,
+      date: transaction.date,
       image: undefined,
       imagePreview: transaction.imageUrl || null,
     });
@@ -169,6 +179,7 @@ function TransactionsTable({
       category:
         editingTransaction.type === "expense" ? editForm.category : null,
       paymentMethod: editForm.paymentMethod,
+      date: Timestamp.fromDate(editForm.date),
       imageUrl: imageUrl,
     });
 
@@ -483,6 +494,40 @@ function TransactionsTable({
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2 flex flex-col">
+              <Label>Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "pl-3 text-left font-normal",
+                      !editForm.date && "text-muted-foreground"
+                    )}
+                  >
+                    {editForm.date ? (
+                      format(editForm.date, "PPP")
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={editForm.date}
+                    onSelect={(date) =>
+                      date && setEditForm((f) => ({ ...f, date: date }))
+                    }
+                    disabled={(date) =>
+                      date > new Date() || date < new Date("1900-01-01")
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="outline">
@@ -649,3 +694,5 @@ function TransactionsTable({
 }
 
 export default TransactionsTable;
+
+    
