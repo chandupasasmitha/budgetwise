@@ -65,7 +65,7 @@ function InvitationContent() {
   }, [searchParams, router, user, authLoading]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+    <div className="flex min-h-[100svh] flex-col items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Accept Invitation</CardTitle>

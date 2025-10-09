@@ -243,7 +243,7 @@ function AddTransactionSheet({ bookId, onTransactionAdded }: AddTransactionSheet
             </span>
           </Button>
         </SheetTrigger>
-        <SheetContent className="flex flex-col gap-0 p-0">
+        <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-lg">
           <SheetHeader className="p-6">
             <SheetTitle>Add a new transaction</SheetTitle>
             <SheetDescription>

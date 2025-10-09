@@ -182,7 +182,7 @@ export default function ManageCollaboratorsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6">
+        <ScrollArea className="flex-1 px-6">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email address</Label>
@@ -226,8 +226,7 @@ export default function ManageCollaboratorsDialog({
                   <h3 className="text-sm font-medium text-muted-foreground">
                     Existing Collaborators
                   </h3>
-                  <ScrollArea className="h-60 pr-4">
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-60 pr-1 -mr-1 overflow-y-auto">
                       {book.collaborators.map((c, index) => (
                         <div
                           key={`${c.email}-${index}`}
@@ -235,7 +234,7 @@ export default function ManageCollaboratorsDialog({
                         >
                           <div className="flex justify-between items-start">
                             <div>
-                              <p className="font-semibold">{c.email}</p>
+                              <p className="font-semibold break-all">{c.email}</p>
                               <p className="text-sm text-muted-foreground">
                                 {c.role} ({c.status})
                               </p>
@@ -243,7 +242,7 @@ export default function ManageCollaboratorsDialog({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7"
+                              className="h-7 w-7 flex-shrink-0"
                               onClick={() => handleRemoveCollaborator(c.email)}
                             >
                               <X className="h-4 w-4" />
@@ -318,14 +317,13 @@ export default function ManageCollaboratorsDialog({
                         </div>
                       ))}
                     </div>
-                  </ScrollArea>
                 </div>
               </>
             )}
           </div>
-        </div>
+        </ScrollArea>
 
-        <DialogFooter className="p-6 pt-4 border-t mt-4">
+        <DialogFooter className="p-6 pt-4 border-t mt-auto">
           <Button variant="outline" onClick={onClose}>
             Done
           </Button>
