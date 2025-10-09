@@ -173,7 +173,7 @@ export default function ManageCollaboratorsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-6">
+        <ScrollArea className="flex-1 px-6 min-h-0">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email address</Label>
@@ -217,7 +217,7 @@ export default function ManageCollaboratorsDialog({
                   <h3 className="text-sm font-medium text-muted-foreground">
                     Existing Collaborators
                   </h3>
-                  <div className="space-y-4 max-h-60 pr-1 -mr-1 overflow-y-auto">
+                  <div className="space-y-4 pr-1 -mr-1">
                     {book.collaborators.map((c, index) => (
                       <div
                         key={`${c.email}-${index}`}
@@ -314,7 +314,7 @@ export default function ManageCollaboratorsDialog({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="p-6 pt-4 border-t dialog-sticky">
+        <DialogFooter className="p-6 pt-4 border-t mt-auto">
           <Button variant="outline" onClick={onClose}>
             Done
           </Button>

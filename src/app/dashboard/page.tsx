@@ -71,7 +71,7 @@ const NewBookModal = ({ isOpen, onClose, onSave }: NewBookModalProps) => {
             onChange={(e) => setBookName(e.target.value)}
           />
         </div>
-        <DialogFooter className="dialog-sticky p-6 pt-4 border-t">
+        <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
