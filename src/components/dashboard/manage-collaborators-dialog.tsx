@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -166,15 +167,15 @@ export default function ManageCollaboratorsDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="p-6 pb-4">
+        <DialogHeader className="p-6 pb-4 border-b">
           <DialogTitle>Manage Collaborators</DialogTitle>
           <DialogDescription>
             Invite new members and manage permissions for {`"${book.name}"`}.
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-6 min-h-0">
-          <div className="space-y-4">
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="space-y-4 p-6">
             <div className="space-y-2">
               <Label htmlFor="email">Email address</Label>
               <Input
@@ -217,7 +218,7 @@ export default function ManageCollaboratorsDialog({
                   <h3 className="text-sm font-medium text-muted-foreground">
                     Existing Collaborators
                   </h3>
-                  <div className="space-y-4 pr-1 -mr-1">
+                  <div className="space-y-4">
                     {book.collaborators.map((c, index) => (
                       <div
                         key={`${c.email}-${index}`}
@@ -314,7 +315,7 @@ export default function ManageCollaboratorsDialog({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="p-6 pt-4 border-t mt-auto">
+        <DialogFooter className="p-6 pt-4 border-t">
           <Button variant="outline" onClick={onClose}>
             Done
           </Button>
