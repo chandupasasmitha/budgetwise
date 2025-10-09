@@ -68,5 +68,44 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    /* Ensure mobile safe-area padding and smoother keyboard handling */
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-top: env(safe-area-inset-top);
+    /* Provide a CSS variable that JS can overwrite when the keyboard opens */
+    --keyboard-offset: 0px;
+  }
+}
+
+/* Prefer larger font sizes on form controls to avoid iOS Safari automatic zoom */
+input,
+textarea,
+select,
+button {
+  font-size: 16px;
+}
+
+/* When the keyboard is open the KeyboardListener will set --keyboard-offset
+   and toggle the .keyboard-open class on <html>. Use that to nudge bottomed
+   UI (sheets, floating buttons, etc) above the keyboard. */
+.keyboard-open .sheet-bottom {
+  bottom: calc(var(--keyboard-offset, 0px) + env(safe-area-inset-bottom));
+}
+
+/* Floating action button that stays above the keyboard and safe-area */
+.fab {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 200ms ease, bottom 200ms ease;
+}
+
+/* Hide or slightly lift fixed controls when keyboard opens on narrow screens */
+@media (max-width: 1024px) {
+  .keyboard-open .fab {
+    transform: translateY(-12vh);
   }
 }
