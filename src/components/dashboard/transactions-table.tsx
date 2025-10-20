@@ -496,7 +496,7 @@ function TransactionsTable({
             </div>
             <div className="space-y-2 flex flex-col">
               <Label>Date</Label>
-              <Popover>
+              <Popover modal={true}>
                 <PopoverTrigger asChild>
                   <Button
                     variant={"outline"}

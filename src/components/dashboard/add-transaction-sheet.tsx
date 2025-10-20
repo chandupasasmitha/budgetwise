@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
@@ -257,10 +258,11 @@ function AddTransactionSheet({
         <div className="fab md:hidden">
           <SheetTrigger asChild>
             <Button
-              className="h-12 w-12 rounded-full p-0"
+              className="h-14 rounded-full p-0 flex items-center justify-center gap-2 px-4"
               aria-label="Add Transaction"
             >
               <PlusCircle className="h-5 w-5" />
+              <span>Add Transaction</span>
             </Button>
           </SheetTrigger>
         </div>
@@ -524,7 +526,7 @@ function AddTransactionSheet({
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
                         <FormLabel>Date</FormLabel>
-                        <Popover>
+                        <Popover modal={true}>
                           <PopoverTrigger asChild>
                             <FormControl>
                               <Button
