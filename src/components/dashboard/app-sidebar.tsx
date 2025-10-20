@@ -17,9 +17,13 @@ const navItems = [
   { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
 
-export default function AppSidebar({ isMobile = false }: { isMobile?: boolean }) {
+interface AppSidebarProps {
+  isMobile?: boolean;
+  onLinkClick?: () => void;
+}
+
+export default function AppSidebar({ isMobile = false, onLinkClick }: AppSidebarProps) {
   const pathname = usePathname();
-  const NavLink = isMobile ? 'div' : Link;
 
   return (
     <div className={cn("hidden border-r bg-card md:block", { "block": isMobile })}>
@@ -34,19 +38,15 @@ export default function AppSidebar({ isMobile = false }: { isMobile?: boolean })
           <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
             {navItems.map(({ href, icon: Icon, label }) => {
               const isActive = pathname === href;
-              const linkContent = (
-                 <div className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-                  isActive && 'bg-muted text-primary'
-                )}>
-                  <Icon className="h-4 w-4" />
-                  {label}
-                </div>
-              );
-
               return (
-                <Link href={href} key={href}>
-                   {linkContent}
+                <Link href={href} key={href} onClick={onLinkClick}>
+                   <div className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
+                    isActive && 'bg-muted text-primary'
+                  )}>
+                    <Icon className="h-4 w-4" />
+                    {label}
+                  </div>
                 </Link>
               );
             })}

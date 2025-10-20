@@ -1,6 +1,8 @@
+
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import {
   Menu,
   CircleUser,
@@ -25,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 export default function AppHeader() {
   const router = useRouter();
   const { toast } = useToast();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -39,9 +42,13 @@ export default function AppHeader() {
     }
   };
 
+  const handleLinkClick = () => {
+    setIsMobileMenuOpen(false);
+  }
+
   return (
     <header className="flex h-14 items-center gap-4 border-b bg-card px-4 lg:h-[60px] lg:px-6">
-      <Sheet>
+      <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
         <SheetTrigger asChild>
           <Button variant="outline" size="icon" className="shrink-0 md:hidden">
             <Menu className="h-5 w-5" />
@@ -49,7 +56,7 @@ export default function AppHeader() {
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="flex flex-col p-0">
-          <AppSidebar isMobile />
+          <AppSidebar isMobile onLinkClick={handleLinkClick} />
         </SheetContent>
       </Sheet>
       <div className="w-full flex-1" />
