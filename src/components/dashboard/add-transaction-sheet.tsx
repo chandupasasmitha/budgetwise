@@ -87,6 +87,8 @@ function AddTransactionSheet({
   const [newCategory, setNewCategory] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
+
 
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
@@ -158,6 +160,7 @@ function AddTransactionSheet({
         });
         return;
     }
+    setIsSavingCategory(true);
     try {
       await addExpenseCategory({
         name: newCategory,
@@ -175,6 +178,8 @@ function AddTransactionSheet({
         title: "Error",
         description: "Failed to add category.",
       });
+    } finally {
+        setIsSavingCategory(false);
     }
   };
 
@@ -680,13 +685,14 @@ function AddTransactionSheet({
               placeholder="e.g., Subscriptions"
               value={newCategory}
               onChange={(e) => setNewCategory(e.target.value)}
+              disabled={isSavingCategory}
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddCategoryOpen(false)}>
+            <Button variant="outline" onClick={() => setIsAddCategoryOpen(false)} disabled={isSavingCategory}>
               Cancel
             </Button>
-            <Button onClick={handleAddNewCategory}>Save</Button>
+            <Button onClick={handleAddNewCategory} isLoading={isSavingCategory}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -695,3 +701,5 @@ function AddTransactionSheet({
 }
 
 export default AddTransactionSheet;
+
+    
