@@ -34,6 +34,7 @@ export default function PaymentMethods() {
   const [paymentMethods, setPaymentMethods] = useState<{ id: string; name: string }[]>([]);
   const [newMethodName, setNewMethodName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export default function PaymentMethods() {
       });
       return;
     }
+    setIsAdding(true);
     try {
       const newId = await addPaymentMethod({ name: newMethodName, userId: user.uid });
       setPaymentMethods([...paymentMethods, { id: newId, name: newMethodName }]);
@@ -71,6 +73,8 @@ export default function PaymentMethods() {
         title: "Error",
         description: "Failed to add payment method.",
       });
+    } finally {
+        setIsAdding(false);
     }
   };
 
@@ -102,8 +106,9 @@ export default function PaymentMethods() {
           placeholder="New payment method name..."
           value={newMethodName}
           onChange={(e) => setNewMethodName(e.target.value)}
+          disabled={isAdding}
         />
-        <Button onClick={handleAddMethod}>
+        <Button onClick={handleAddMethod} isLoading={isAdding}>
           <PlusCircle className="mr-2 h-4 w-4" /> Add
         </Button>
       </div>
@@ -128,7 +133,7 @@ export default function PaymentMethods() {
                   <TableCell className="text-right">
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                         <Button variant="ghost" size="sm" disabled={isDeleting === method.id}>
+                         <Button variant="ghost" size="sm" disabled={!!isDeleting}>
                             {isDeleting === method.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
                         </Button>
                       </AlertDialogTrigger>

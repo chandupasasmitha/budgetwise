@@ -539,10 +539,7 @@ function TransactionsTable({
                   Cancel
                 </Button>
               </DialogClose>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
+              <Button type="submit" isLoading={isSubmitting}>
                 Save Changes
               </Button>
             </DialogFooter>
@@ -624,10 +621,7 @@ function TransactionsTable({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
+              <Button type="submit" isLoading={isSubmitting}>
                 Save Image
               </Button>
             </DialogFooter>
@@ -677,11 +671,8 @@ function TransactionsTable({
                 <Button
                   variant="destructive"
                   onClick={() => handleDeleteImage(viewingTransaction)}
-                  disabled={isSubmitting}
+                  isLoading={isSubmitting}
                 >
-                  {isSubmitting && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
                   Delete
                 </Button>
               </div>

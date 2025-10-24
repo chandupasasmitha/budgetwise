@@ -35,6 +35,7 @@ export default function ExpenseCategories() {
   const [customCategories, setCustomCategories] = useState<{ id: string; name: string }[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   useEffect(() => {
@@ -67,7 +68,7 @@ export default function ExpenseCategories() {
         });
         return;
     }
-
+    setIsAdding(true);
     try {
       const newId = await addExpenseCategory({ name: newCategoryName, userId: user.uid });
       setCustomCategories([...customCategories, { id: newId, name: newCategoryName }]);
@@ -82,6 +83,8 @@ export default function ExpenseCategories() {
         title: "Error",
         description: "Failed to add category.",
       });
+    } finally {
+        setIsAdding(false);
     }
   };
 
@@ -113,8 +116,9 @@ export default function ExpenseCategories() {
           placeholder="New category name..."
           value={newCategoryName}
           onChange={(e) => setNewCategoryName(e.target.value)}
+          disabled={isAdding}
         />
-        <Button onClick={handleAddCategory}>
+        <Button onClick={handleAddCategory} isLoading={isAdding}>
           <PlusCircle className="mr-2 h-4 w-4" /> Add
         </Button>
       </div>
@@ -160,7 +164,7 @@ export default function ExpenseCategories() {
                   <TableCell className="text-right">
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                         <Button variant="ghost" size="sm" disabled={isDeleting === cat.id}>
+                         <Button variant="ghost" size="sm" disabled={!!isDeleting}>
                             {isDeleting === cat.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
                         </Button>
                       </AlertDialogTrigger>
