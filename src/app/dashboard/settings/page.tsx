@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import PaymentMethods from "@/components/dashboard/settings/payment-methods";
+import ExpenseCategories from "@/components/dashboard/settings/expense-categories";
 
 export default function SettingsPage() {
     return (
@@ -22,6 +23,15 @@ export default function SettingsPage() {
                     </CardHeader>
                     <CardContent>
                     <PaymentMethods />
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Expense Categories</CardTitle>
+                        <CardDescription>Manage your custom expense categories.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ExpenseCategories />
                     </CardContent>
                 </Card>
             </div>

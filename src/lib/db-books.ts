@@ -182,6 +182,28 @@ export async function deletePaymentMethod(methodId: string) {
     await deleteDoc(doc(db, "paymentMethods", methodId));
 }
 
+export async function getExpenseCategories(userId: string) {
+    const db = getDb();
+    const q = query(collection(db, "expenseCategories"), where("userId", "==", userId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as {id: string, name: string}[];
+}
+
+export async function addExpenseCategory({ name, userId }: { name: string; userId: string }) {
+    const db = getDb();
+    const docRef = await addDoc(collection(db, "expenseCategories"), {
+        name,
+        userId,
+        createdAt: Timestamp.now(),
+    });
+    return docRef.id;
+}
+
+export async function deleteExpenseCategory(categoryId: string) {
+    const db = getDb();
+    await deleteDoc(doc(db, "expenseCategories", categoryId));
+}
+
 export async function addCollaborator(bookId: string, email: string, role: CollaboratorRole) {
   const db = getDb();
   const bookRef = doc(db, "books", bookId);

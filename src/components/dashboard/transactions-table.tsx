@@ -58,7 +58,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { useAuth } from "@/hooks/use-auth";
-import { getPaymentMethods } from "@/lib/db-books";
+import { getPaymentMethods, getExpenseCategories } from "@/lib/db-books";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -90,6 +90,7 @@ function TransactionsTable({
   const [paymentMethods, setPaymentMethods] = useState<
     { id: string; name: string }[]
   >([]);
+  const [expenseCategories, setExpenseCategories] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editForm, setEditForm] = useState({
     description: "",
@@ -119,8 +120,12 @@ function TransactionsTable({
       imagePreview: transaction.imageUrl || null,
     });
     if (user) {
-      const methods = await getPaymentMethods(user.uid);
+      const [methods, customCategories] = await Promise.all([
+        getPaymentMethods(user.uid),
+        getExpenseCategories(user.uid)
+      ]);
       setPaymentMethods(methods);
+      setExpenseCategories([...EXPENSE_CATEGORIES, ...customCategories.map(c => c.name)]);
     }
   };
 
@@ -465,7 +470,7 @@ function TransactionsTable({
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {EXPENSE_CATEGORIES.map((cat) => (
+                    {expenseCategories.map((cat) => (
                       <SelectItem key={cat} value={cat}>
                         {cat}
                       </SelectItem>
@@ -694,5 +699,3 @@ function TransactionsTable({
 }
 
 export default TransactionsTable;
-
-    

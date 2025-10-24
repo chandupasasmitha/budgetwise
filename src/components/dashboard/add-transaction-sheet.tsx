@@ -51,7 +51,7 @@ import { suggestCategoriesAction } from "@/app/actions";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
-import { getPaymentMethods, addPaymentMethod } from "@/lib/db-books";
+import { getPaymentMethods, addPaymentMethod, getExpenseCategories, addExpenseCategory } from "@/lib/db-books";
 import {
   Dialog,
   DialogContent,
@@ -80,8 +80,11 @@ function AddTransactionSheet({
   const [paymentMethods, setPaymentMethods] = useState<
     { id: string; name: string }[]
   >([]);
+  const [expenseCategories, setExpenseCategories] = useState<string[]>([]);
   const [isAddPaymentMethodOpen, setIsAddPaymentMethodOpen] = useState(false);
   const [newPaymentMethod, setNewPaymentMethod] = useState("");
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [newCategory, setNewCategory] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -101,14 +104,18 @@ function AddTransactionSheet({
   const transactionType = form.watch("type");
 
   useEffect(() => {
-    async function fetchPaymentMethods() {
+    async function fetchData() {
       if (user) {
-        const methods = await getPaymentMethods(user.uid);
+        const [methods, customCategories] = await Promise.all([
+          getPaymentMethods(user.uid),
+          getExpenseCategories(user.uid),
+        ]);
         setPaymentMethods(methods);
+        setExpenseCategories([...EXPENSE_CATEGORIES, ...customCategories.map(c => c.name)]);
       }
     }
     if (isOpen) {
-      fetchPaymentMethods();
+      fetchData();
     }
   }, [user, isOpen]);
 
@@ -137,6 +144,36 @@ function AddTransactionSheet({
         variant: "destructive",
         title: "Error",
         description: "Failed to add payment method.",
+      });
+    }
+  };
+
+  const handleAddNewCategory = async () => {
+    if (!user || !newCategory.trim()) return;
+    if (expenseCategories.map(c => c.toLowerCase()).includes(newCategory.toLowerCase())) {
+        toast({
+            variant: "destructive",
+            title: "Category exists",
+            description: "This category name is already in use.",
+        });
+        return;
+    }
+    try {
+      await addExpenseCategory({
+        name: newCategory,
+        userId: user.uid,
+      });
+      const updatedCategories = [...expenseCategories, newCategory];
+      setExpenseCategories(updatedCategories);
+      form.setValue("category", newCategory);
+      toast({ title: "Category added" });
+      setNewCategory("");
+      setIsAddCategoryOpen(false);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add category.",
       });
     }
   };
@@ -360,7 +397,7 @@ function AddTransactionSheet({
                               variant="secondary"
                               className="cursor-pointer"
                               onClick={() => {
-                                if (EXPENSE_CATEGORIES.includes(cat)) {
+                                if (expenseCategories.includes(cat)) {
                                   form.setValue("category", cat);
                                 } else {
                                   form.setValue("category", "Other");
@@ -402,7 +439,13 @@ function AddTransactionSheet({
                         <FormItem>
                           <FormLabel>Category</FormLabel>
                           <Select
-                            onValueChange={field.onChange}
+                            onValueChange={(value) => {
+                                if (value === "add-new") {
+                                    setIsAddCategoryOpen(true);
+                                } else {
+                                    field.onChange(value);
+                                }
+                            }}
                             defaultValue={field.value}
                             value={field.value}
                           >
@@ -412,11 +455,16 @@ function AddTransactionSheet({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {EXPENSE_CATEGORIES.map((category) => (
+                              {expenseCategories.map((category) => (
                                 <SelectItem key={category} value={category}>
                                   {category}
                                 </SelectItem>
                               ))}
+                               <SelectItem value="add-new">
+                                  <span className="flex items-center gap-2">
+                                    <PlusCircle className="h-4 w-4" /> Add new...
+                                  </span>
+                                </SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -616,6 +664,29 @@ function AddTransactionSheet({
               Cancel
             </Button>
             <Button onClick={handleAddNewPaymentMethod}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+       <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Category</DialogTitle>
+            <DialogDescription>
+              This category will be saved to your profile for future use.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="e.g., Subscriptions"
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddCategoryOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddNewCategory}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

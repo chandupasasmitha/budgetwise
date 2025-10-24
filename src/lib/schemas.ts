@@ -1,6 +1,5 @@
 
 import { z } from "zod";
-import { EXPENSE_CATEGORIES } from "./constants";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -27,7 +26,7 @@ export const transactionSchema = z.object({
   imageUrl: z.string().optional(),
 }).refine(data => {
     if (data.type === 'expense') {
-        return !!data.category && EXPENSE_CATEGORIES.includes(data.category);
+        return !!data.category && data.category.length > 0;
     }
     return true;
     }, {
