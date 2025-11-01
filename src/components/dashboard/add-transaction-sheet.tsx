@@ -291,23 +291,25 @@ function AddTransactionSheet({
     <>
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
-          <Button size="sm" className="h-8 gap-1 md:inline-flex">
+          <Button size="sm" className="h-8 gap-1 md:inline-flex hidden">
             <PlusCircle className="h-3.5 w-3.5" />
             <span className="whitespace-nowrap">Add Transaction</span>
           </Button>
         </SheetTrigger>
         {/* Floating action button for small screens */}
-        <div className="fab md:hidden">
-          <SheetTrigger asChild>
-            <Button
-              className="h-14 rounded-full p-0 flex items-center justify-center gap-2 px-4"
-              aria-label="Add Transaction"
-            >
-              <PlusCircle className="h-5 w-5" />
-              <span>Add Transaction</span>
-            </Button>
-          </SheetTrigger>
-        </div>
+        {!isOpen && (
+            <div className="fab md:hidden">
+            <SheetTrigger asChild>
+                <Button
+                className="h-14 rounded-full p-0 flex items-center justify-center gap-2 px-4"
+                aria-label="Add Transaction"
+                >
+                <PlusCircle className="h-5 w-5" />
+                <span>Add Transaction</span>
+                </Button>
+            </SheetTrigger>
+            </div>
+        )}
         <SheetContent
           className="flex flex-col gap-0 p-0 sm:max-w-lg"
           onInteractOutside={(e) => {
@@ -702,4 +704,5 @@ function AddTransactionSheet({
 
 export default AddTransactionSheet;
 
+    
     
