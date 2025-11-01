@@ -657,8 +657,8 @@ function TransactionsTable({
             )}
           </div>
           {viewingTransaction && (
-            <DialogFooter className="mt-4 sm:justify-between">
-              <div className="flex gap-2">
+            <DialogFooter className="mt-4 flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 gap-2">
+              <div className="flex gap-2 justify-end">
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -677,7 +677,7 @@ function TransactionsTable({
                 </Button>
               </div>
               <DialogClose asChild>
-                <Button type="button" className="sm:ml-auto">
+                <Button type="button">
                   Close
                 </Button>
               </DialogClose>
