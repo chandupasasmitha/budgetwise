@@ -5,7 +5,7 @@ import { getFirestore, Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
     apiKey: "AIzaSyA3iLcMZigjY_fkYiS87RwpjZS3sW2DCUE",
-    authDomain: "budgetwise-41m86.firebaseapp.com",
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
     projectId: "budgetwise-41m86",
     storageBucket: "budgetwise-41m86.appspot.com",
     messagingSenderId: "373648485369",
