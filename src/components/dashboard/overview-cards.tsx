@@ -12,22 +12,12 @@ interface OverviewCardsProps {
 }
 
 export default function OverviewCards({ transactions, showBalance, showIncome, showExpenses }: OverviewCardsProps) {
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
   
-  const monthlyTransactions = transactions.filter((exp) => {
-    const date = exp.date;
-    return (
-      date.getMonth() === currentMonth && date.getFullYear() === currentYear
-    );
-  });
-  
-  const totalIncome = monthlyTransactions
+  const totalIncome = transactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0);
     
-  const totalSpent = monthlyTransactions
+  const totalSpent = transactions
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
   
@@ -39,7 +29,7 @@ export default function OverviewCards({ transactions, showBalance, showIncome, s
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Total Spent (Month)
+              Total Spent
             </CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -51,7 +41,7 @@ export default function OverviewCards({ transactions, showBalance, showIncome, s
       {showIncome && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Income (Month)</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Income</CardTitle>
             <PiggyBank className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -80,7 +70,7 @@ export default function OverviewCards({ transactions, showBalance, showIncome, s
           <CreditCard className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{monthlyTransactions.length}</div>
+          <div className="text-2xl font-bold">{transactions.length}</div>
         </CardContent>
       </Card>
     </>
