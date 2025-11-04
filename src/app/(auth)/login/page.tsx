@@ -6,7 +6,7 @@ import { getRedirectResult } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { storeUser } from '@/lib/db-books';
+import { storeUser, acceptInvitation } from '@/lib/db-books';
 import { LoginForm } from "@/components/auth/login-form";
 import { Loader2 } from 'lucide-react';
 
@@ -20,9 +20,21 @@ export default function LoginPage() {
       try {
         const result = await getRedirectResult(auth);
         if (result && result.user) {
-          // User has successfully signed in.
+          // User has successfully signed in via redirect.
           const { uid, email, displayName } = result.user;
           await storeUser({ uid, email, displayName });
+          
+          // After login, check for and process a pending invitation
+          const pendingInvitation = sessionStorage.getItem('pendingInvitation');
+          if (pendingInvitation && email) {
+            const { bookId, email: inviteEmail } = JSON.parse(pendingInvitation);
+            if (inviteEmail.toLowerCase() === email.toLowerCase()) {
+                await acceptInvitation(bookId, inviteEmail);
+                toast({ title: "Invitation accepted!", description: "A shared cash book has been added to your account." });
+                sessionStorage.removeItem('pendingInvitation');
+            }
+          }
+
           toast({ title: "Login Successful", description: "Redirecting to your dashboard..." });
           router.push('/dashboard');
           // No need to set isProcessing to false, as we are navigating away
@@ -57,4 +69,3 @@ export default function LoginPage() {
 
   return <LoginForm />;
 }
-
